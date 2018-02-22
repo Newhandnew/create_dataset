@@ -1,0 +1,4 @@
+.idea
+__pycache__
+animal_train.tfrecords
+
