@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-
-# Python 2/3 compatibility
-from __future__ import print_function
 import os
 import glob
 import cv2
@@ -13,7 +10,7 @@ def onmouse(event, x, y, flags, param):
 
 
 if __name__ == '__main__':
-    seriesNum = '6P7BCX521HZZ'
+    seriesNum = '6P7BCXL2BMZZ'
     datasetPath = '/home/new/Downloads/dataset/AOI/1.25/'
     img_path = os.path.join(datasetPath, seriesNum, seriesNum + '1.tif')
     print(img_path)

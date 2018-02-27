@@ -24,9 +24,9 @@ def get_ng_data(line, pattern_ng):
 
 def main():
     line = b'2018/1/25 \xa4U\xa4\xc8 11:58:34,6P7BCX521HZZ,NG,4,242 (287,33)1,242 (48,365)4,242 (42,367)\r\n'
-    line = str(line)
+    log = str(line)
     pattern_ng = ',NG,'
-    ng = get_ng_data(line, pattern_ng)
+    ng = get_ng_data(log, pattern_ng)
     print(ng)
 
 
