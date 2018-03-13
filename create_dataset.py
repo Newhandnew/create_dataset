@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from read_ng import get_ng_data
 import crop_image
-from tfrecord_io import split_dataset_write_tfrecord
+from write_tfrecord import split_dataset_write_tfrecord
 
 
 if __name__ == '__main__':
@@ -58,10 +58,12 @@ if __name__ == '__main__':
                 # process image
                 else:
                     image_dir = os.path.join(image_path, seriesNum)
+                    save_image_dir = os.path.join('pictures', seriesNum)
                     if label == 'OK':
                         if ok_test_count < (ok_limit * test_ratio):
                             img_path = os.path.join(image_dir, seriesNum + '1.tif')  # get first pattern image
                             ok_images = crop_image.crop_ok_image(img_path, crop_size)
+                            crop_image.save_image(ok_images, save_image_dir, label_ok)
                             train_size, test_size = split_dataset_write_tfrecord(
                                 writer_train, writer_test, ok_images, label_ok, test_ratio)
                             ok_train_count = ok_train_count + train_size
@@ -74,6 +76,7 @@ if __name__ == '__main__':
                             img_path = os.path.join(image_dir, seriesNum + pattern + '.tif')
                             for defect in ng[pattern]:
                                 ng_images = crop_image.crop_ng_image(img_path, defect, crop_size, crop_number)
+                                crop_image.save_image(ng_images, save_image_dir, label_ng)
                                 train_size, test_size = split_dataset_write_tfrecord(
                                     writer_train, writer_test, ng_images, label_ng, test_ratio)
                                 ng_train_count = ng_train_count + train_size

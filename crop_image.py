@@ -74,20 +74,26 @@ def crop_ng_image(img_path, defect_point, crop_size, crop_number):
     return ng_images
 
 
+def save_image(image_array, image_name, label):
+    for i, image in enumerate(image_array):
+        file_name = '{}_{}_{}.jpg'.format(image_name, i, label)
+        cv2.imwrite(file_name, image)
+
+
 def main():
-    img_path = '/home/new/Downloads/dataset/AOI/1.25/6P7BCXL2BMZZ/6P7BCXL2BMZZ1.tif'
+    img_path = '/home/new/Downloads/dataset/AOI/1.25/6P7BCY581TZZ/6P7BCY581TZZ1.tif'
     crop_size = [224, 224]
 
     # test ok crop
-    show_number = 50
-    ok_images = crop_ok_image(img_path, crop_size)
-    for index, image in enumerate(ok_images):
-        if index < show_number:
-            cv2.imshow(str(index), image)
-    cv2.waitKey()
-    cv2.destroyAllWindows()
+    # show_number = 50
+    # ok_images = crop_ok_image(img_path, crop_size)
+    # for index, image in enumerate(ok_images):
+    #     if index < show_number:
+    #         cv2.imshow(str(index), image)
+    # cv2.waitKey()
+    # cv2.destroyAllWindows()
     # test ng crop
-    defect_point = (6355, 3825)
+    defect_point = (6086,3370)
     crop_number = 10
     ng_images = crop_ng_image(img_path, defect_point, crop_size, crop_number)
     for index, image in enumerate(ng_images):
