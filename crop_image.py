@@ -69,7 +69,11 @@ def crop_ng_image(img_path, defect_point, crop_size, crop_number):
     image = cv2.imread(img_path, 0)
     ng_images = []
     for i in range(crop_number):
-        ng_images.append(random_crop(image, defect_point, crop_size))
+        crop_image = random_crop(image, defect_point, crop_size)
+        ng_images.append(crop_image)
+        ng_images.append(cv2.flip(crop_image, 1))
+        ng_images.append(cv2.flip(crop_image, 0))
+        ng_images.append(cv2.flip(crop_image, -1))
 
     return ng_images
 
@@ -93,8 +97,8 @@ def main():
     # cv2.waitKey()
     # cv2.destroyAllWindows()
     # test ng crop
-    defect_point = (6086,3370)
-    crop_number = 10
+    defect_point = (6486,3970)
+    crop_number = 5
     ng_images = crop_ng_image(img_path, defect_point, crop_size, crop_number)
     for index, image in enumerate(ng_images):
         cv2.imshow(str(index), image)

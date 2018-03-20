@@ -18,7 +18,7 @@ if __name__ == '__main__':
     seriesDigits = 12
 
     crop_size = [224, 224]
-    crop_number = 10
+    crop_number = 5
 
     target_names = os.path.join(data_dir, '*.' + extension_name)
     log_names = glob.glob(target_names)
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     output_dir = 'output'
     tfrecord_train = 'AOI_train.tfrecords'
     tfrecord_test = 'AOI_test.tfrecords'
-    ok_limit = 5200
+    ok_limit = 10000
     label_ok = 0
     label_ng = 1  # replace this
     output_train = os.path.join(output_dir, tfrecord_train)
