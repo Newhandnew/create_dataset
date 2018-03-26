@@ -49,7 +49,7 @@ def random_crop(input_array, defect_point, crop_size):
       Returns:
         sub-array in input_array including defect point
       """
-    margin = 1
+    margin = 2
     y_min = margin
     x_min = margin
     y_max, x_max = input_array.shape

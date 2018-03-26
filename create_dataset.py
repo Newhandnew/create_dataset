@@ -51,17 +51,17 @@ if __name__ == '__main__':
                 log = str(line)
                 dataList = log.split(',')
                 print(dataList)
-                seriesNum = dataList[index_series]
+                series_num = dataList[index_series]
                 label = dataList[index_label]
-                if seriesNum == '' or seriesNum == 'IsNullCode' or len(seriesNum) != seriesDigits:
+                if series_num == '' or series_num == 'IsNullCode' or len(series_num) != seriesDigits:
                     print('error')
                 # process image
                 else:
-                    image_dir = os.path.join(image_path, seriesNum)
-                    save_image_dir = os.path.join('pictures', seriesNum)
+                    image_dir = os.path.join(image_path, series_num)
+                    save_image_dir = os.path.join('pictures', series_num)
                     if label == 'OK':
                         if ok_test_count < (ok_limit * test_ratio):
-                            img_path = os.path.join(image_dir, seriesNum + '1.tif')  # get first pattern image
+                            img_path = os.path.join(image_dir, series_num + '1.tif')  # get first pattern image
                             ok_images = crop_image.crop_ok_image(img_path, crop_size)
                             crop_image.save_image(ok_images, save_image_dir, label_ok)
                             train_size, test_size = split_dataset_write_tfrecord(
@@ -73,7 +73,7 @@ if __name__ == '__main__':
                         ng = get_ng_data(log, pattern_ng)
                         print(ng)
                         for pattern in ng:
-                            img_path = os.path.join(image_dir, seriesNum + pattern + '.tif')
+                            img_path = os.path.join(image_dir, series_num + pattern + '.tif')
                             for defect in ng[pattern]:
                                 ng_images = crop_image.crop_ng_image(img_path, defect, crop_size, crop_number)
                                 crop_image.save_image(ng_images, save_image_dir, label_ng)
