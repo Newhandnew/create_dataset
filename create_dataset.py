@@ -1,10 +1,10 @@
 import os
 import glob
-import tensorflow as tf
+# import tensorflow as tf
 
 from read_ng import get_ng_data
-import crop_image
-from write_tfrecord import split_dataset_write_tfrecord
+from crop_image import CropImage
+# from write_tfrecord import split_dataset_write_tfrecord
 
 
 if __name__ == '__main__':
@@ -23,22 +23,23 @@ if __name__ == '__main__':
     target_names = os.path.join(data_dir, '*.' + extension_name)
     log_names = glob.glob(target_names)
     print(log_names)
-    ok_train_count = 0
-    ok_test_count = 0
-    ng_train_count = 0
-    ng_test_count = 0
+    ok_count = 0
+    ng_count = 0
 
-    output_dir = 'output'
-    tfrecord_train = 'AOI_train.tfrecords'
-    tfrecord_test = 'AOI_test.tfrecords'
-    ok_limit = 10000
+    # output_dir = 'output'
+    # tfrecord_train = 'AOI_train.tfrecords'
+    # tfrecord_test = 'AOI_test.tfrecords'
+    save_image_dir = 'picture'
+    num_class = 2
+    # ok_limit = 10000
     label_ok = 0
     label_ng = 1  # replace this
-    output_train = os.path.join(output_dir, tfrecord_train)
-    output_test = os.path.join(output_dir, tfrecord_test)
-    test_ratio = 0.2
-    writer_train = tf.python_io.TFRecordWriter(output_train)
-    writer_test = tf.python_io.TFRecordWriter(output_test)
+    crop_image = CropImage(save_image_dir, num_class)
+    # output_train = os.path.join(output_dir, tfrecord_train)
+    # output_test = os.path.join(output_dir, tfrecord_test)
+    # test_ratio = 0.2
+    # writer_train = tf.python_io.TFRecordWriter(output_train)
+    # writer_test = tf.python_io.TFRecordWriter(output_test)
 
     for log_name in log_names:
         print('open filename: {}'.format(log_name))
@@ -58,16 +59,13 @@ if __name__ == '__main__':
                 # process image
                 else:
                     image_dir = os.path.join(image_path, series_num)
-                    save_image_dir = os.path.join('pictures', series_num)
                     if label == 'OK':
-                        if ok_test_count < (ok_limit * test_ratio):
-                            img_path = os.path.join(image_dir, series_num + '1.tif')  # get first pattern image
-                            ok_images = crop_image.crop_ok_image(img_path, crop_size)
-                            crop_image.save_image(ok_images, save_image_dir, label_ok)
-                            train_size, test_size = split_dataset_write_tfrecord(
-                                writer_train, writer_test, ok_images, label_ok, test_ratio)
-                            ok_train_count = ok_train_count + train_size
-                            ok_test_count = ok_test_count + test_size
+                        img_path = os.path.join(image_dir, series_num + '1.tif')  # get first pattern image
+                        ok_images = crop_image.crop_ok_image(img_path, crop_size)
+                        crop_image.save_image(ok_images, series_num, label_ok)
+                        # train_size, test_size = split_dataset_write_tfrecord(
+                        #     writer_train, writer_test, ok_images, label_ok, test_ratio)
+                        ok_count = ok_count + 600
 
                     elif label == 'NG':
                         ng = get_ng_data(log, pattern_ng)
@@ -76,15 +74,15 @@ if __name__ == '__main__':
                             img_path = os.path.join(image_dir, series_num + pattern + '.tif')
                             for defect in ng[pattern]:
                                 ng_images = crop_image.crop_ng_image(img_path, defect, crop_size, crop_number)
-                                crop_image.save_image(ng_images, save_image_dir, label_ng)
-                                train_size, test_size = split_dataset_write_tfrecord(
-                                    writer_train, writer_test, ng_images, label_ng, test_ratio)
-                                ng_train_count = ng_train_count + train_size
-                                ng_test_count = ng_test_count + test_size
-                        # do NG sampling image
+                                image_name = '{}_{}'.format(series_num, defect)
+                                crop_image.save_image(ng_images, image_name, label_ng)
+                                # train_size, test_size = split_dataset_write_tfrecord(
+                                #     writer_train, writer_test, ng_images, label_ng, test_ratio)
+                                ng_count = ng_count + 20
 
-    writer_train.close()
-    writer_test.close()
-    print('finish!!  ok train: {}, ok test: {}, ng train: {}, ng test: {}'.format(
-        ok_train_count, ok_test_count, ng_train_count, ng_test_count))
+    print('finish! ok count: {}, ng count: {}'.format(ok_count, ng_count))
+    # writer_train.close()
+    # writer_test.close()
+    # print('finish!!  ok train: {}, ok test: {}, ng train: {}, ng test: {}'.format(
+    #     ok_train_count, ok_test_count, ng_train_count, ng_test_count))
 
