@@ -3,6 +3,8 @@ from sklearn.model_selection import train_test_split
 import glob
 import os
 import cv2
+import random
+import shutil
 
 
 def transfer_tfrecord(image, label):
@@ -14,26 +16,50 @@ def transfer_tfrecord(image, label):
     return tf_transfer
 
 
-def get_min_size_data(save_image_dir, num_class):
-    min_size = 50000
+def get_data(save_image_dir, num_class):
     image_names = []
     for i in range(num_class):
         data_dir = os.path.join(save_image_dir, str(i))
         target_names = os.path.join(data_dir, '*.png')
         images = glob.glob(target_names)
         image_names.append(images)
-        size = len(images)
+    return image_names
+
+
+def get_min_size_data(save_image_dir, num_class):
+    image_names = get_data(save_image_dir, num_class)
+    min_size = len(image_names[0])
+    for i in range(1, len(image_names)):
+        size = len(image_names[i])
         if size < min_size:
             min_size = size
+    print('min size: {}'.format(min_size))
     for i in range(num_class):
-        image_names[i] = image_names[i][:min_size]
+        if len(image_names[i]) > min_size:
+            image_names[i] = random.sample(image_names[i], min_size)
+            # test program for move image list
+            move_image_list(image_names[i], 'ok_list')
     return image_names
+
+
+def write_image_list(image_names, file_name):
+    with open(file_name, 'w+') as f:
+        for image in image_names:
+            f.write('{} '.format(image))
+
+
+def move_image_list(image_names, target_dir):
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+    for image in image_names:
+        shutil.move(image, target_dir)
 
 
 if __name__ == "__main__":
     save_image_dir = 'picture'
     num_class = 2
-    image_names = get_min_size_data(save_image_dir, num_class)
+    # image_names = get_min_size_data(save_image_dir, num_class)
+    image_names = get_data(save_image_dir, num_class)
 
     output_dir = 'output'
     tfrecord_train = 'AOI_train.tfrecords'
