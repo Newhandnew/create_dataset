@@ -6,13 +6,9 @@ import cv2
 
 class CropImage(object):
 
-    def __init__(self, save_image_dir, num_class):
-        self.save_image_dir = save_image_dir
-        for i in range(num_class):
-            path = os.path.join(save_image_dir, str(i))
-            print(path)
-            if not os.path.exists(path):
-                os.makedirs(path)
+    def __init__(self, save_image_dir='', num_class=0):
+        if save_image_dir != '':
+            self.set_save_dir(save_image_dir, num_class)
 
     def get_grid_axis(self, img_height, img_width, crop_size):
         crop_width = crop_size[0]
@@ -84,6 +80,14 @@ class CropImage(object):
             ng_images.append(cv2.flip(crop_image, -1))
 
         return ng_images
+
+    def set_save_dir(self, save_image_dir, num_class):
+        self.save_image_dir = save_image_dir
+        for i in range(num_class):
+            path = os.path.join(save_image_dir, str(i))
+            print(path)
+            if not os.path.exists(path):
+                os.makedirs(path)
 
     def save_image(self, image_array, image_name, label):
         image_dir = os.path.join(self.save_image_dir, str(label))

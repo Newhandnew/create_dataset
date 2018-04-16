@@ -7,9 +7,13 @@ from read_ng import get_ng_data
 
 
 class LogData(object):
-    def __init__(self):
-        self.pattern = '242'
+    def __init__(self, pattern_name):
+        self.style = '001'
         self.log_result = ''
+        self.pattern = pattern_name
+
+    def set_style(self, value):
+        self.style = value
 
     def set_pattern(self, value):
         self.pattern = value
@@ -19,18 +23,19 @@ class LogData(object):
 
     def on_mouse_callback(self, event, x, y, flags, offset):
         if event == cv2.EVENT_LBUTTONDOWN:
-            self.log_result = self.log_result + '1,{} ({},{})'.format(self.pattern, x + offset[0], y + offset[1])
+            self.log_result = self.log_result + '{},{} ({},{})'.format(self.pattern, self.style, x + offset[0], y + offset[1])
 
 
 if __name__ == '__main__':
-    data_dir = '/home/new/Downloads/dataset/AOI'
+    data_dir = '/media/new/A43C2A8E3C2A5C14/Downloads/AOI_dataset' # '/home/new/Downloads/dataset/AOI'
     extension_name = 'log'
-    pattern_ng = ',NG,'
+    ng_log_symbol = ',NG,'
     image_folder_month_in_log = -7
     image_folder_day_in_log = -6
     index_series = 1
     index_label = 2
     seriesDigits = 12
+    pattern_check = '2'  # black
 
     target_names = os.path.join(data_dir, '*.' + extension_name)
     log_names = glob.glob(target_names)
@@ -64,44 +69,45 @@ if __name__ == '__main__':
                             output_file.write(line)
 
                         elif label == 'NG':
-                            ng = get_ng_data(log, pattern_ng)
+                            ng = get_ng_data(log, ng_log_symbol)
                             print(ng)
                             for pattern in ng:
-                                # show NG picture
-                                ng_dir = os.path.join(image_dir, 'NG')
-                                target_names = os.path.join(ng_dir, '*.jpg')
-                                file_names = glob.glob(target_names)
-                                for file_name in file_names:
-                                    img = cv2.imread(file_name)
-                                    img = cv2.resize(img, (800, 600))
-                                    cv2.imshow(file_name, img)
+                                if pattern == pattern_check:
+                                    # show NG picture
+                                    ng_dir = os.path.join(image_dir, 'NG')
+                                    target_names = os.path.join(ng_dir, '*' + pattern_check + '.jpg')
+                                    file_names = glob.glob(target_names)
+                                    for file_name in file_names:
+                                        img = cv2.imread(file_name)
+                                        img = cv2.resize(img, (800, 600))
+                                        cv2.imshow(file_name, img)
 
-                                img_path = os.path.join(image_dir, series_num + pattern + '.tif')
-                                log_data = LogData()
-                                img = cv2.imread(img_path)
-                                cv2.namedWindow("image")
-                                separateRow = [0, 900, 1800, 2700, 3600, 4383]
-                                for i in range(len(separateRow) - 1):
-                                    cv2.setMouseCallback("image", log_data.on_mouse_callback, (0, separateRow[i]))
-                                    cv2.imshow('image', img[separateRow[i]:separateRow[i + 1], :])
-                                    while 1:
-                                        key = cv2.waitKey(20)
-                                        if key == ord('m'):
-                                            log_data.set_pattern('242')  # mura
-                                        elif key == ord('b'):
-                                            log_data.set_pattern('004')  # black point
-                                        elif key == ord('w'):
-                                            log_data.set_pattern('007')  # white point
-                                        elif key == 32:  # space
-                                            break
-                                        elif key == 27:  # Esc
-                                            exit('end of program')
+                                    img_path = os.path.join(image_dir, series_num + pattern + '.tif')
+                                    log_data = LogData(pattern_check)
+                                    img = cv2.imread(img_path)
+                                    cv2.namedWindow("image")
+                                    separateRow = [0, 900, 1800, 2700, 3600, 4383]
+                                    for i in range(len(separateRow) - 1):
+                                        cv2.setMouseCallback("image", log_data.on_mouse_callback, (0, separateRow[i]))
+                                        cv2.imshow('image', img[separateRow[i]:separateRow[i + 1], :])
+                                        while 1:
+                                            key = cv2.waitKey(20)
+                                            if key == ord('m'):
+                                                log_data.set_style('003')  # mura
+                                            elif key == ord('b'):
+                                                log_data.set_style('002')  # black point
+                                            elif key == ord('w'):
+                                                log_data.set_style('001')  # white point
+                                            elif key == 32:  # space
+                                                break
+                                            elif key == 27:  # Esc
+                                                exit('end of program')
 
-                                output = dataList[0][2:] + ',' + dataList[1] + ',' + dataList[2] +\
-                                         ',' + log_data.get_log_result() + '\r\n'
-                                byte_output = str.encode(output)
-                                print(byte_output)
-                                output_file.write(byte_output)
+                                    output = dataList[0][2:] + ',' + dataList[1] + ',' + dataList[2] +\
+                                             ',' + log_data.get_log_result() + '\r\n'
+                                    byte_output = str.encode(output)
+                                    print(byte_output)
+                                    output_file.write(byte_output)
 
 
 
