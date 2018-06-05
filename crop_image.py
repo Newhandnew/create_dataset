@@ -89,12 +89,27 @@ class CropImage(object):
             if not os.path.exists(path):
                 os.makedirs(path)
 
-    def save_image(self, image_array, image_name, label):
+    def save_image(self, image_array, image_name, pattern_name, label):
+        """save crop images as png
+
+            image_array: cropped images array, may be processed by crop_ok_image or crop_ng_image.
+            image_name: only the series number of the cropped image. e.g. Core35397686
+            pattern_name: save pattern name as extension. e.g. 01, 02, sl
+            label: separate different label in different directory. e.g. 0, 1, 2
+
+          Returns:
+            image_list: saved file list in {image_name}_{index} format. e.g. Core35397686_0
+          """
         image_dir = os.path.join(self.save_image_dir, str(label))
+        image_list = []
         for i, image in enumerate(image_array):
-            file_name = '{}_{}.png'.format(image_name, i)
+            image_list_name = '{}_{}'.format(image_name, i)
+            file_name = '{}_{}.png'.format(image_list_name, pattern_name)
             image_path = os.path.join(image_dir, file_name)
             cv2.imwrite(image_path, image)
+            image_list_name = os.path.join(image_dir, image_list_name)
+            image_list.append(image_list_name)
+        return image_list
 
 
 def main():
