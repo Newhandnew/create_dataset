@@ -69,6 +69,34 @@ class CropImage(object):
         # print('({}, {}, {}, {})'.format(random_x_min, random_x_max, random_y_min, random_y_max))
         return input_array[crop_y:crop_y + crop_size[1], crop_x:crop_x + crop_size[0]]
 
+    def random_crop_2_pattern(self, pattern_image, side_light_image, defect_point, crop_size):
+        """Random crop image including defect point.
+
+            pattern_image: pattern image, gray scale
+            side_light_image: side light image, gray scale
+            defect_point: defect point (x, y)
+            crop_size: crop size in [width, height]
+
+          Returns:
+            sub-array in input_array including defect point
+          """
+        margin = 2
+        y_min = margin
+        x_min = margin
+        y_max, x_max = pattern_image.shape
+        x_max = x_max - crop_size[0] - margin
+        y_max = y_max - crop_size[1] - margin
+        random_x_min = max(defect_point[0] - crop_size[0] + margin, x_min)
+        random_x_max = min(defect_point[0] - margin, x_max)
+        random_y_min = max(defect_point[1] - crop_size[1] + margin, y_min)
+        random_y_max = min(defect_point[1] - margin, y_max)
+        crop_x = random.randint(random_x_min, random_x_max)
+        crop_y = random.randint(random_y_min, random_y_max)
+        # print('({}, {}, {}, {})'.format(random_x_min, random_x_max, random_y_min, random_y_max))
+        crop_pattern_image =  pattern_image[crop_y:crop_y + crop_size[1], crop_x:crop_x + crop_size[0]]
+        crop_side_light_image = side_light_image[crop_y:crop_y + crop_size[1], crop_x:crop_x + crop_size[0]]
+        return crop_pattern_image, crop_side_light_image
+
     def crop_ng_image(self, img_path, defect_point, crop_size, crop_number):
         image = cv2.imread(img_path, 0)
         ng_images = []
@@ -81,6 +109,27 @@ class CropImage(object):
 
         return ng_images
 
+    def crop_ng_image_2_pattern(self, pattern_path, side_ligth_path, defect_point, crop_size, crop_number):
+        img_pattern = cv2.imread(pattern_path, 0)
+        img_side_ligth = cv2.imread(side_ligth_path, 0)
+        ng_pattern_images = []
+        ng_side_light_images = []
+        for i in range(crop_number):
+            pattern_crop_image, side_light_crop_image = self.random_crop_2_pattern(img_pattern, img_side_ligth,
+                                                                                   defect_point, crop_size)
+            ng_pattern_images = ng_pattern_images + self.get_four_rotated_image(pattern_crop_image)
+            ng_side_light_images = ng_side_light_images + self.get_four_rotated_image(side_light_crop_image)
+
+        return ng_pattern_images, ng_side_light_images
+
+    def get_four_rotated_image(self, image):
+        image_list = []
+        image_list.append(image)
+        image_list.append(cv2.flip(image, 1))
+        image_list.append(cv2.flip(image, 0))
+        image_list.append(cv2.flip(image, -1))
+        return image_list
+
     def set_save_dir(self, save_image_dir, num_class):
         self.save_image_dir = save_image_dir
         for i in range(num_class):
@@ -89,7 +138,20 @@ class CropImage(object):
             if not os.path.exists(path):
                 os.makedirs(path)
 
-    def save_image(self, image_array, image_name, pattern_name, label):
+    def save_image(self, image_array, image_name, label):
+        """save crop images as png
+
+            image_array: cropped images array, may be processed by crop_ok_image or crop_ng_image.
+            image_name: only the series number of the cropped image. e.g. Core35397686
+            label: separate different label in different directory. e.g. 0, 1, 2
+        """
+        image_dir = os.path.join(self.save_image_dir, str(label))
+        for i, image in enumerate(image_array):
+            file_name = '{}_{}.png'.format(image_name, i)
+            image_path = os.path.join(image_dir, file_name)
+            cv2.imwrite(image_path, image)
+
+    def save_2_pattern_image(self, pattern_array, side_light_array, image_name, pattern_name, side_light_name, label):
         """save crop images as png
 
             image_array: cropped images array, may be processed by crop_ok_image or crop_ng_image.
@@ -102,11 +164,14 @@ class CropImage(object):
           """
         image_dir = os.path.join(self.save_image_dir, str(label))
         image_list = []
-        for i, image in enumerate(image_array):
+        for i in range(len(pattern_array)):
             image_list_name = '{}_{}'.format(image_name, i)
-            file_name = '{}_{}.png'.format(image_list_name, pattern_name)
-            image_path = os.path.join(image_dir, file_name)
-            cv2.imwrite(image_path, image)
+            pattern_file = '{}_{}.png'.format(image_list_name, pattern_name)
+            image_path = os.path.join(image_dir, pattern_file)
+            cv2.imwrite(image_path, pattern_array[i])
+            side_light_file = '{}_{}.png'.format(image_list_name, side_light_name)
+            image_path = os.path.join(image_dir, side_light_file)
+            cv2.imwrite(image_path, side_light_array[i])
             image_list_name = os.path.join(image_dir, image_list_name)
             image_list.append(image_list_name)
         return image_list
