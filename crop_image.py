@@ -54,7 +54,7 @@ class CropImage(object):
           Returns:
             sub-array in input_array including defect point
           """
-        margin = 2
+        margin = 3
         y_min = margin
         x_min = margin
         y_max, x_max = input_array.shape
@@ -80,7 +80,7 @@ class CropImage(object):
           Returns:
             sub-array in input_array including defect point
           """
-        margin = 2
+        margin = 3
         y_min = margin
         x_min = margin
         y_max, x_max = pattern_image.shape
