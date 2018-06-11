@@ -3,42 +3,31 @@ import glob
 import pandas as pd
 from read_ng import get_ng_data
 from crop_image import CropImage
+from multi_pattern_process import get_pattern_image_path
 
 
-def create_ng_dataset(crop_size, num_class):
+def create_ng_dataset(save_image_dir, crop_size, num_class, pattern_extension, image_extension):
     data_dir = '/home/new/Downloads/dataset/Remark_NG'  # '/home/new/Downloads/dataset/AOI'
     csv_file = '/home/new/Downloads/dataset/Remark_NG.csv'
     crop_number = 10
-
     ng_count = 0
-    save_image_dir = 'picture'
-    pattern_extension = '01'
-    side_light_extension = 'sl'
-    image_extension = '.bmp'
     label_ng = 1  # replace this
 
     data_frame = pd.read_csv(csv_file)
-    # only get W255 and remove light line
-    data_w255 = data_frame[(data_frame.pattern == 'W255') & (data_frame.type != "light line")]
     crop_image = CropImage(save_image_dir, num_class)
     image_list_file_path = os.path.join(save_image_dir, 'ng_image_list')
     image_list_file = open(image_list_file_path, 'w+')
 
-    for _, row in data_w255.iterrows():
+    for _, row in data_frame.iterrows():
         series_number = row.barcode
         defect_point = (row.x, row.y)
         series_image_path = os.path.join(data_dir, series_number)
-        img_pattern_full = series_image_path + '_' + pattern_extension + image_extension
-        img_side_light_full = series_image_path + '_' + side_light_extension + image_extension
+        pattern_path_list = get_pattern_image_path(series_image_path, pattern_extension, image_extension)
 
-        ng_pattern_images, ng_side_light_images = crop_image.crop_ng_image_2_pattern(img_pattern_full,
-                                                                                     img_side_light_full,
-                                                                                     defect_point,
-                                                                                     crop_size, crop_number)
+        pattern_images = crop_image.crop_ng_image_array(pattern_path_list, defect_point, crop_size, crop_number)
         image_name = os.path.basename(series_image_path) + '_ng'
 
-        image_list = crop_image.save_2_pattern_image(ng_pattern_images, ng_side_light_images, image_name,
-                                                     pattern_extension, side_light_extension, label_ng)
+        image_list = crop_image.save_image_array(pattern_images, image_name, pattern_extension, label_ng)
         ng_count = ng_count + len(image_list)
 
         for image in image_list:
@@ -48,22 +37,16 @@ def create_ng_dataset(crop_size, num_class):
     return ng_count
 
 
-def create_ok_dataset(crop_size, num_class):
+def create_ok_dataset(save_image_dir, crop_size, num_class, pattern_extension, image_extension):
     label_ok = 0
     ok_count = 0
     data_dir = '/home/new/Downloads/dataset/Remark_OK'  # '/home/new/Downloads/dataset/AOI'
     extension_name = 'xml'
-    save_image_dir = 'picture'
-    pattern_extension = '01'
-    side_light_extension = 'sl'
-    image_extension = '.bmp'
-    label_ok = 0  # replace this
 
     series_list = []
     target_names = os.path.join(data_dir, '*.' + extension_name)
     log_path = glob.glob(target_names)
     for file_path in log_path:
-        # file_name = os.path.basename(file_path)
         series_number = os.path.splitext(file_path)[0]
         series_list.append(series_number)
     print(series_list)
@@ -72,14 +55,12 @@ def create_ok_dataset(crop_size, num_class):
     image_list_file_path = os.path.join(save_image_dir, 'ok_image_list')
     image_list_file = open(image_list_file_path, 'w+')
     for series_image_path in series_list:
-        img_pattern_full = series_image_path + '_' + pattern_extension + image_extension
-        pattern_images = crop_image.crop_ok_image(img_pattern_full, crop_size)
+        pattern_path_list = get_pattern_image_path(series_image_path, pattern_extension, image_extension)
         image_name = os.path.basename(series_image_path)
 
-        img_side_light_full = series_image_path + '_' + side_light_extension + image_extension
-        side_light_images = crop_image.crop_ok_image(img_side_light_full, crop_size)
-        image_list = crop_image.save_2_pattern_image(pattern_images, side_light_images, image_name,
-                                                     pattern_extension, side_light_extension, label_ok)
+        pattern_images = crop_image.crop_ok_image_array(pattern_path_list, crop_size)
+        image_list = crop_image.save_image_array(pattern_images, image_name, pattern_extension, label_ok)
+
         ok_count = ok_count + len(image_list)
         for image in image_list:
             image_list_file.write('{}\n'.format(image))
@@ -90,10 +71,13 @@ def create_ok_dataset(crop_size, num_class):
 
 
 if __name__ == '__main__':
+    save_image_dir = 'picture_7_pattern'
     crop_size = [224, 224]
     num_class = 2
-    ng_count = create_ng_dataset(crop_size, num_class)
-    ok_count = create_ok_dataset(crop_size, num_class)
+    pattern_extension = ['sl', '01', '02', '03', '04', '05', '06']
+    image_extension = 'bmp'
+    ng_count = create_ng_dataset(save_image_dir, crop_size, num_class, pattern_extension, image_extension)
+    ok_count = create_ok_dataset(save_image_dir, crop_size, num_class, pattern_extension, image_extension)
 
     print('finish! ok count: {}, ng count: {}'.format(ok_count, ng_count))
 

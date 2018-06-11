@@ -10,6 +10,13 @@ class CropImage(object):
         if save_image_dir != '':
             self.set_save_dir(save_image_dir, num_class)
 
+    def read_image_array(self, pattern_path_list):
+        image_array = []
+        for path in pattern_path_list:
+            image = cv2.imread(path, 0)
+            image_array.append(image)
+        return image_array
+
     def get_grid_axis(self, img_height, img_width, crop_size):
         crop_width = crop_size[0]
         crop_height = crop_size[1]
@@ -44,6 +51,27 @@ class CropImage(object):
 
         return ok_images
 
+    def crop_ok_image_array(self, pattern_path_list, crop_size):
+        """
+        return pattern_images: [[01, 02, ...], [01, 02, ...], ...]
+        """
+        image_array = self.read_image_array(pattern_path_list)
+        height, width = image_array[0].shape
+        height = height - 1
+        width = width - 1
+        ok_images_array = []
+        for image in image_array:
+            grid_array = self.get_grid_axis(height, width, crop_size)
+            ok_images = []
+            for grid in grid_array:
+                x = grid[0]
+                y = grid[1]
+                ok_images.append(image[y:y + crop_size[1], x:x + crop_size[0]])
+            ok_images_array.append(ok_images)
+        pattern_images = list(zip(*ok_images_array))  # unpack ok_images_array then zip
+
+        return pattern_images
+
     def random_crop(self, input_array, defect_point, crop_size):
         """Random crop image including defect point.
 
@@ -69,7 +97,7 @@ class CropImage(object):
         # print('({}, {}, {}, {})'.format(random_x_min, random_x_max, random_y_min, random_y_max))
         return input_array[crop_y:crop_y + crop_size[1], crop_x:crop_x + crop_size[0]]
 
-    def random_crop_2_pattern(self, pattern_image, side_light_image, defect_point, crop_size):
+    def random_crop_array(self, pattern_image_array, defect_point, crop_size):
         """Random crop image including defect point.
 
             pattern_image: pattern image, gray scale
@@ -78,12 +106,12 @@ class CropImage(object):
             crop_size: crop size in [width, height]
 
           Returns:
-            sub-array in input_array including defect point
+            crop_image_array: [pattern1, pattern2, ... ]
           """
         margin = 3
         y_min = margin
         x_min = margin
-        y_max, x_max = pattern_image.shape
+        y_max, x_max = pattern_image_array[0].shape
         x_max = x_max - crop_size[0] - margin
         y_max = y_max - crop_size[1] - margin
         random_x_min = max(defect_point[0] - crop_size[0] + margin, x_min)
@@ -93,34 +121,20 @@ class CropImage(object):
         crop_x = random.randint(random_x_min, random_x_max)
         crop_y = random.randint(random_y_min, random_y_max)
         # print('({}, {}, {}, {})'.format(random_x_min, random_x_max, random_y_min, random_y_max))
-        crop_pattern_image =  pattern_image[crop_y:crop_y + crop_size[1], crop_x:crop_x + crop_size[0]]
-        crop_side_light_image = side_light_image[crop_y:crop_y + crop_size[1], crop_x:crop_x + crop_size[0]]
-        return crop_pattern_image, crop_side_light_image
+        crop_image_array = []
+        for image in pattern_image_array:
+            crop_image = image[crop_y:crop_y + crop_size[1], crop_x:crop_x + crop_size[0]]
+            crop_image_array.append(crop_image)
+        return crop_image_array
 
     def crop_ng_image(self, img_path, defect_point, crop_size, crop_number):
         image = cv2.imread(img_path, 0)
         ng_images = []
         for i in range(crop_number):
             crop_image = self.random_crop(image, defect_point, crop_size)
-            ng_images.append(crop_image)
-            ng_images.append(cv2.flip(crop_image, 1))
-            ng_images.append(cv2.flip(crop_image, 0))
-            ng_images.append(cv2.flip(crop_image, -1))
+            ng_images = ng_images + self.get_four_rotated_image(crop_image)
 
         return ng_images
-
-    def crop_ng_image_2_pattern(self, pattern_path, side_ligth_path, defect_point, crop_size, crop_number):
-        img_pattern = cv2.imread(pattern_path, 0)
-        img_side_ligth = cv2.imread(side_ligth_path, 0)
-        ng_pattern_images = []
-        ng_side_light_images = []
-        for i in range(crop_number):
-            pattern_crop_image, side_light_crop_image = self.random_crop_2_pattern(img_pattern, img_side_ligth,
-                                                                                   defect_point, crop_size)
-            ng_pattern_images = ng_pattern_images + self.get_four_rotated_image(pattern_crop_image)
-            ng_side_light_images = ng_side_light_images + self.get_four_rotated_image(side_light_crop_image)
-
-        return ng_pattern_images, ng_side_light_images
 
     def get_four_rotated_image(self, image):
         image_list = []
@@ -129,6 +143,28 @@ class CropImage(object):
         image_list.append(cv2.flip(image, 0))
         image_list.append(cv2.flip(image, -1))
         return image_list
+
+    def crop_ng_image_array(self, pattern_path_list, defect_point, crop_size, crop_number):
+        """
+        return pattern_images: [[01, 02, ...], [01, 02, ...], ...]
+        """
+        image_array = self.read_image_array(pattern_path_list)
+        pattern_images = []
+        for i in range(crop_number):
+            crop_images = self.random_crop_array(image_array, defect_point, crop_size)
+            normal_array = []
+            h_flip_array = []
+            v_flip_array = []
+            h_v_flip_array = []
+            for image in crop_images:
+                four_rotated_images = self.get_four_rotated_image(image)
+                normal_array.append(four_rotated_images[0])
+                h_flip_array.append(four_rotated_images[1])
+                v_flip_array.append(four_rotated_images[2])
+                h_v_flip_array.append(four_rotated_images[3])
+            pattern_images.extend((normal_array, h_flip_array, v_flip_array, h_v_flip_array))
+
+        return pattern_images
 
     def set_save_dir(self, save_image_dir, num_class):
         self.save_image_dir = save_image_dir
@@ -151,12 +187,12 @@ class CropImage(object):
             image_path = os.path.join(image_dir, file_name)
             cv2.imwrite(image_path, image)
 
-    def save_2_pattern_image(self, pattern_array, side_light_array, image_name, pattern_name, side_light_name, label):
+    def save_image_array(self, pattern_array, image_basename, pattern_extension, label):
         """save crop images as png
 
-            image_array: cropped images array, may be processed by crop_ok_image or crop_ng_image.
-            image_name: only the series number of the cropped image. e.g. Core35397686
-            pattern_name: save pattern name as extension. e.g. 01, 02, sl
+            pattern_array: cropped images array, may be processed by crop_ok_image_array or crop_ng_image_array.
+            image_basename: only the series number of the cropped image. e.g. Core35397686
+            pattern_extension: save pattern name as extension. e.g. 01, 02, sl
             label: separate different label in different directory. e.g. 0, 1, 2
 
           Returns:
@@ -164,14 +200,12 @@ class CropImage(object):
           """
         image_dir = os.path.join(self.save_image_dir, str(label))
         image_list = []
-        for i in range(len(pattern_array)):
-            image_list_name = '{}_{}'.format(image_name, i)
-            pattern_file = '{}_{}.png'.format(image_list_name, pattern_name)
-            image_path = os.path.join(image_dir, pattern_file)
-            cv2.imwrite(image_path, pattern_array[i])
-            side_light_file = '{}_{}.png'.format(image_list_name, side_light_name)
-            image_path = os.path.join(image_dir, side_light_file)
-            cv2.imwrite(image_path, side_light_array[i])
+        for index in range(len(pattern_array)):
+            image_list_name = '{}_{}'.format(image_basename, index)
+            for pattern_index, extension in enumerate(pattern_extension):
+                pattern_file = '{}_{}.png'.format(image_list_name, extension)
+                image_path = os.path.join(image_dir, pattern_file)
+                cv2.imwrite(image_path, pattern_array[index][pattern_index])
             image_list_name = os.path.join(image_dir, image_list_name)
             image_list.append(image_list_name)
         return image_list

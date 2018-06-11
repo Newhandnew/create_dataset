@@ -2,19 +2,19 @@ import tensorflow as tf
 from sklearn.model_selection import train_test_split
 import glob
 import os
-import cv2
 import random
 import shutil
+from multi_pattern_process import get_pattern_image_path, read_image_array
 
 
-def transfer_tfrecord(img_side_light, img_pattern, label):
-    bytes_side_light = img_side_light.tobytes()
-    bytes_pattern = img_pattern.tobytes()
-    tf_transfer = tf.train.Example(features=tf.train.Features(feature={
-        'label': tf.train.Feature(int64_list=tf.train.Int64List(value=[label])),
-        'img_side_light': tf.train.Feature(bytes_list=tf.train.BytesList(value=[bytes_side_light])),
-        'img_pattern': tf.train.Feature(bytes_list=tf.train.BytesList(value=[bytes_pattern]))
-    }))
+def transfer_tfrecord(image_array, pattern_extension, label):
+    tfrecord_feature = {'label': tf.train.Feature(int64_list=tf.train.Int64List(value=[label]))}
+    for index, image in enumerate(image_array):
+        bytes_image = image.tobytes()
+        tfrecord_feature['img_{}'.format(pattern_extension[index])] = \
+            tf.train.Feature(bytes_list=tf.train.BytesList(value=[bytes_image]))
+
+    tf_transfer = tf.train.Example(features=tf.train.Features(feature=tfrecord_feature))
     return tf_transfer
 
 
@@ -58,18 +58,17 @@ def move_image_list(image_names, target_dir):
 
 
 if __name__ == "__main__":
-    ng_list_path = 'picture/ng_image_list'
-    ok_list_path = 'picture/ok_image_list'
+    ng_list_path = 'picture_7_pattern/ng_image_list'
+    ok_list_path = 'picture_7_pattern/ok_image_list'
     label_list = [ok_list_path, ng_list_path]
 
-    # save_image_dir = 'picture'
     # # image_names = get_min_size_data(save_image_dir, num_class)
     # image_names = get_data(save_image_dir, num_class)
     # print(image_names)
 
     output_dir = 'output'
-    tfrecord_train = 'aoi_train.tfrecords'
-    tfrecord_test = 'aoi_test.tfrecords'
+    tfrecord_train = 'aoi_7_pattern_train.tfrecords'
+    tfrecord_test = 'aoi_7_pattern_test.tfrecords'
     output_train = os.path.join(output_dir, tfrecord_train)
     output_test = os.path.join(output_dir, tfrecord_test)
     test_ratio = 0.2
@@ -77,10 +76,12 @@ if __name__ == "__main__":
     writer_test = tf.python_io.TFRecordWriter(output_test)
     total_train_size = 0
     total_test_size = 0
-    train_file_path = os.path.join(output_dir, 'train_list')
-    test_file_path = os.path.join(output_dir, 'test_list')
+    train_file_path = os.path.join(output_dir, 'train_7_pattern_list')
+    test_file_path = os.path.join(output_dir, 'test_7_pattern_list')
     train_list_file = open(train_file_path, 'w+')
     test_list_file = open(test_file_path, 'w+')
+    pattern_extension = ['sl', '01', '02', '03', '04', '05', '06']
+    image_extension = 'png'
 
     for label in range(len(label_list)):
         with open(label_list[label]) as f:
@@ -88,20 +89,16 @@ if __name__ == "__main__":
         print(image_list)
         train_image, test_image = train_test_split(image_list, test_size=test_ratio)
         for image_path in train_image:
-            pattern_name = image_path + "_01.png"
-            side_light_name = image_path + "_sl.png"
             train_list_file.write('{}\n'.format(image_path))
-            img_pattern = cv2.imread(pattern_name, 0)
-            img_side_light = cv2.imread(side_light_name, 0)
-            tf_transfer = transfer_tfrecord(img_side_light, img_pattern, label)
+            pattern_path_list = get_pattern_image_path(image_path, pattern_extension, image_extension)
+            image_array = read_image_array(pattern_path_list)
+            tf_transfer = transfer_tfrecord(image_array, pattern_extension, label)
             writer_train.write(tf_transfer.SerializeToString())
         for image_path in test_image:
-            pattern_name = image_path + "_01.png"
-            side_light_name = image_path + "_sl.png"
             test_list_file.write('{}\n'.format(image_path))
-            img_pattern = cv2.imread(pattern_name, 0)
-            img_side_light = cv2.imread(side_light_name, 0)
-            tf_transfer = transfer_tfrecord(img_side_light, img_pattern, label)
+            pattern_path_list = get_pattern_image_path(image_path, pattern_extension, image_extension)
+            image_array = read_image_array(pattern_path_list)
+            tf_transfer = transfer_tfrecord(image_array, pattern_extension, label)
             writer_test.write(tf_transfer.SerializeToString())
         total_train_size += len(train_image)
         total_test_size += len(test_image)
