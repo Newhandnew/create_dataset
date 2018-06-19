@@ -76,7 +76,7 @@ if __name__ == '__main__':
     num_class = 2
     pattern_extension = ['sl', '01', '02', '03', '04', '05', '06']
     image_extension = 'bmp'
-    ng_count = create_ng_dataset(save_image_dir, crop_size, num_class, pattern_extension, image_extension)
+    ng_count = 0 #create_ng_dataset(save_image_dir, crop_size, num_class, pattern_extension, image_extension)
     ok_count = create_ok_dataset(save_image_dir, crop_size, num_class, pattern_extension, image_extension)
 
     print('finish! ok count: {}, ng count: {}'.format(ok_count, ng_count))

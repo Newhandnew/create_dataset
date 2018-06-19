@@ -28,20 +28,18 @@ def get_data(save_image_dir, num_class):
     return image_names
 
 
-def get_min_size_data(save_image_dir, num_class):
-    image_names = get_data(save_image_dir, num_class)
-    min_size = len(image_names[0])
-    for i in range(1, len(image_names)):
-        size = len(image_names[i])
+def get_min_size_data(all_image_list):
+    min_size = len(all_image_list[0])
+    for i in range(1, len(all_image_list)):
+        size = len(all_image_list[i])
         if size < min_size:
             min_size = size
     print('min size: {}'.format(min_size))
-    for i in range(num_class):
-        if len(image_names[i]) > min_size:
-            image_names[i] = random.sample(image_names[i], min_size)
+    for i in range(len(all_image_list)):
+        if len(all_image_list[i]) > min_size:
+            all_image_list[i] = random.sample(all_image_list[i], min_size)
             # test program for move image list
-            move_image_list(image_names[i], 'ok_list')
-    return image_names
+    return all_image_list
 
 
 def write_image_list(image_names, file_name):
@@ -61,8 +59,14 @@ if __name__ == "__main__":
     ng_list_path = 'picture_7_pattern/ng_image_list'
     ok_list_path = 'picture_7_pattern/ok_image_list'
     label_list = [ok_list_path, ng_list_path]
-
-    # # image_names = get_min_size_data(save_image_dir, num_class)
+    all_image_list = []
+    for label in range(len(label_list)):
+        with open(label_list[label]) as f:
+            image_list = [line.strip() for line in f]
+            print(image_list)
+            all_image_list.append(image_list)
+    # all_image_list = get_min_size_data(all_image_list)
+    print(all_image_list)
     # image_names = get_data(save_image_dir, num_class)
     # print(image_names)
 
@@ -83,10 +87,7 @@ if __name__ == "__main__":
     pattern_extension = ['sl', '01', '02', '03', '04', '05', '06']
     image_extension = 'png'
 
-    for label in range(len(label_list)):
-        with open(label_list[label]) as f:
-            image_list = [line.strip() for line in f]
-        print(image_list)
+    for label, image_list in enumerate(all_image_list):
         train_image, test_image = train_test_split(image_list, test_size=test_ratio)
         for image_path in train_image:
             train_list_file.write('{}\n'.format(image_path))

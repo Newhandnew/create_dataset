@@ -82,7 +82,7 @@ class CropImage(object):
           Returns:
             sub-array in input_array including defect point
           """
-        margin = 3
+        margin = 2
         y_min = margin
         x_min = margin
         y_max, x_max = input_array.shape
@@ -108,7 +108,7 @@ class CropImage(object):
           Returns:
             crop_image_array: [pattern1, pattern2, ... ]
           """
-        margin = 3
+        margin = 2
         y_min = margin
         x_min = margin
         y_max, x_max = pattern_image_array[0].shape
@@ -163,6 +163,8 @@ class CropImage(object):
                 v_flip_array.append(four_rotated_images[2])
                 h_v_flip_array.append(four_rotated_images[3])
             pattern_images.extend((normal_array, h_flip_array, v_flip_array, h_v_flip_array))
+
+            # pattern_images.append(crop_images)
 
         return pattern_images
 
