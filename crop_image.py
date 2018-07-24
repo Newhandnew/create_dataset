@@ -108,7 +108,7 @@ class CropImage(object):
           Returns:
             crop_image_array: [pattern1, pattern2, ... ]
           """
-        margin = 2
+        margin = 3
         y_min = margin
         x_min = margin
         y_max, x_max = pattern_image_array[0].shape

@@ -1,6 +1,10 @@
+import os
+
+
 if __name__ == "__main__":
-    ok_list_path = 'picture_7_pattern/ok_image_list'
-    trim_ok_list = 'picture_7_pattern/trim_ok_image_list'
+    data_path = "picture_7_pattern_0703"
+    ok_list_path = os.path.join(data_path, 'ok_image_list')
+    trim_ok_list = os.path.join(data_path, 'trim_ok_image_list')
     keep_range = [91, 538]
     image_list_file = open(trim_ok_list, 'w+')
 
