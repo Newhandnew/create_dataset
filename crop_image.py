@@ -172,7 +172,7 @@ class CropImage(object):
         self.save_image_dir = save_image_dir
         for i in range(num_class):
             path = os.path.join(save_image_dir, str(i))
-            print(path)
+            # print(path)
             if not os.path.exists(path):
                 os.makedirs(path)
 
