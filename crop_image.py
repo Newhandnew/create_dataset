@@ -2,6 +2,7 @@ from math import ceil
 import random
 import os
 import cv2
+import numpy as np
 
 
 class CropImage(object):
@@ -11,6 +12,7 @@ class CropImage(object):
             self.set_save_dir(save_image_dir, num_class)
 
     def read_image_array(self, pattern_path_list):
+        """pattern path list: [image1_path, image2_path, ...]"""
         image_array = []
         for path in pattern_path_list:
             image = cv2.imread(path, 0)
@@ -70,7 +72,7 @@ class CropImage(object):
             ok_images_array.append(ok_images)
         pattern_images = list(zip(*ok_images_array))  # unpack ok_images_array then zip
 
-        return pattern_images
+        return pattern_images, grid_array
 
     def random_crop(self, input_array, defect_point, crop_size):
         """Random crop image including defect point.
@@ -125,7 +127,7 @@ class CropImage(object):
         for image in pattern_image_array:
             crop_image = image[crop_y:crop_y + crop_size[1], crop_x:crop_x + crop_size[0]]
             crop_image_array.append(crop_image)
-        return crop_image_array
+        return crop_image_array, (crop_x, crop_y)
 
     def crop_ng_image(self, img_path, defect_point, crop_size, crop_number):
         image = cv2.imread(img_path, 0)
@@ -144,14 +146,26 @@ class CropImage(object):
         image_list.append(cv2.flip(image, -1))
         return image_list
 
+    def random_change_image_scale(self, image):
+        scale_image = np.int16(image)  # convert to signed 16 bit integer to allow overflow
+        random_scale = random.uniform(0.8, 1.2)
+        random_offset = random.randint(-10, 10)
+        scale_image = random_scale * scale_image + random_offset  # apply scale factor
+        scale_image = np.clip(scale_image, 0, 255)  # force all values to be between 0 and 255
+        # after clip img2 is effectively unsigned 8 bit, but make it explicit:
+        scale_image = np.uint8(scale_image)
+        return scale_image
+
     def crop_ng_image_array(self, pattern_path_list, defect_point, crop_size, crop_number):
         """
         return pattern_images: [[01, 02, ...], [01, 02, ...], ...]
         """
         image_array = self.read_image_array(pattern_path_list)
         pattern_images = []
+        grid_array = []
         for i in range(crop_number):
-            crop_images = self.random_crop_array(image_array, defect_point, crop_size)
+            crop_images, grid = self.random_crop_array(image_array, defect_point, crop_size)
+            grid_array += self.get_rotate_axis(grid)
             normal_array = []
             h_flip_array = []
             v_flip_array = []
@@ -166,7 +180,16 @@ class CropImage(object):
 
             # pattern_images.append(crop_images)
 
-        return pattern_images
+        return pattern_images, grid_array
+
+    def get_rotate_axis(self, grid):
+        w = 6576
+        h = 4384
+        normal_grid = grid
+        h_flip_grid = (w - grid[0], grid[1])
+        v_flip_grid = (grid[0], h - grid[1])
+        h_v_flip_grid = (w - grid[0], h - grid[1])
+        return [normal_grid, h_flip_grid, v_flip_grid, h_v_flip_grid]
 
     def set_save_dir(self, save_image_dir, num_class):
         self.save_image_dir = save_image_dir
@@ -189,7 +212,7 @@ class CropImage(object):
             image_path = os.path.join(image_dir, file_name)
             cv2.imwrite(image_path, image)
 
-    def save_image_array(self, pattern_array, image_basename, pattern_extension, label):
+    def save_image_array(self, pattern_array, image_basename, grid_array, pattern_extension, label):
         """save crop images as png
 
             pattern_array: cropped images array, may be processed by crop_ok_image_array or crop_ng_image_array.
@@ -203,7 +226,7 @@ class CropImage(object):
         image_dir = os.path.join(self.save_image_dir, str(label))
         image_list = []
         for index in range(len(pattern_array)):
-            image_list_name = '{}_{}'.format(image_basename, index)
+            image_list_name = '{}_x{}_y{}'.format(image_basename, grid_array[index][0], grid_array[index][1])
             for pattern_index, extension in enumerate(pattern_extension):
                 pattern_file = '{}_{}.png'.format(image_list_name, extension)
                 image_path = os.path.join(image_dir, pattern_file)
@@ -214,7 +237,7 @@ class CropImage(object):
 
 
 def main():
-    img_path = '/home/new/Downloads/dataset/AOI/1.25/6P7BCY581TZZ/6P7BCY581TZZ1.tif'
+    img_path = '/home/new/Downloads/test_image/4B837LH7AEZZ_01.bmp'
     crop_size = [224, 224]
 
     # test ok crop
@@ -227,16 +250,25 @@ def main():
     # cv2.destroyAllWindows()
     # test ng crop
     defect_point = (6486,3970)
-    crop_number = 5
-    save_image_dir = 'picture'
+    crop_number = 1
+    save_image_dir = 'picture/test'
     num_class = 2
-
     crop_image = CropImage(save_image_dir, num_class)
     ng_images = crop_image.crop_ng_image(img_path, defect_point, crop_size, crop_number)
     crop_image.save_image(ng_images, 'test', '1')
     for index, image in enumerate(ng_images):
         cv2.imshow(str(index), image)
+    image = cv2.imread(img_path, 0)
+    image1 = crop_image.random_change_image_scale(image)
+    image2 = crop_image.random_change_image_scale(image)
+    cv2.imshow("test", image)
+    cv2.imshow("1", image1)
+    cv2.imshow("2", image2)
+    print(image[2200, 500])
+    print(image1[2200, 500])
+    print(image2[2200, 500])
     cv2.waitKey()
+    print(crop_image.get_rotate_axis((1000, 1000)))
 
 
 if __name__ == '__main__':

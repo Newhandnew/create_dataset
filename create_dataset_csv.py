@@ -1,15 +1,12 @@
 import os
 import glob
 import pandas as pd
-from read_ng import get_ng_data
 from crop_image import CropImage
 from multi_pattern_process import get_pattern_image_path
 
 
-def create_ng_dataset(save_image_dir, crop_size, num_class, pattern_extension, image_extension):
-    data_dir = '/media/new/A43C2A8E3C2A5C14/Downloads/AOI_dataset/Remark_NG_0625'  # '/home/new/Downloads/dataset/Remark_NG'
-    csv_file = '/media/new/A43C2A8E3C2A5C14/Downloads/AOI_dataset/Remark_NG_0625/Remark_NG_0625.csv'
-    crop_number = 10
+def create_ng_dataset(data_dir, csv_file, save_image_dir, crop_size, num_class, pattern_extension, image_extension):
+    crop_number = 1
     ng_count = 0
     label_ng = 1  # replace this
 
@@ -31,6 +28,7 @@ def create_ng_dataset(save_image_dir, crop_size, num_class, pattern_extension, i
         pattern_path_list = get_pattern_image_path(series_image_path, pattern_extension, image_extension)
         image_name = os.path.basename(series_image_path) + '_ng'
         defect_list = []
+        grid_array = []
         defect_range = 4
         pattern_image_list = []
         for index in range(length_x):
@@ -40,15 +38,18 @@ def create_ng_dataset(save_image_dir, crop_size, num_class, pattern_extension, i
             for old_defect in defect_list:
                 if abs(defect_x - old_defect[0]) < defect_range:
                     if abs(defect_y - old_defect[1]) < defect_range:
-                        break        # same point
+                        break  # same point
             else:
                 defect_point = (defect_x, defect_y)
                 print(defect_point)
                 defect_list.append(defect_point)
-                pattern_images = crop_image.crop_ng_image_array(pattern_path_list, defect_point, crop_size, crop_number)
+                pattern_images, sub_grid_array = crop_image.crop_ng_image_array(pattern_path_list, defect_point,
+                                                                                crop_size, crop_number)
                 pattern_image_list += pattern_images
+                grid_array += sub_grid_array
 
-        image_list = crop_image.save_image_array(pattern_image_list, image_name, pattern_extension, label_ng)
+        image_list = crop_image.save_image_array(pattern_image_list, image_name, grid_array, pattern_extension,
+                                                 label_ng)
         ng_count = ng_count + len(image_list)
 
         for image in image_list:
@@ -58,11 +59,10 @@ def create_ng_dataset(save_image_dir, crop_size, num_class, pattern_extension, i
     return ng_count
 
 
-def create_ok_dataset(save_image_dir, crop_size, num_class, pattern_extension, image_extension):
+def create_ok_dataset(data_dir, save_image_dir, crop_size, num_class, pattern_extension, image_extension):
     label_ok = 0
     ok_count = 0
-    data_dir = '/home/new/Downloads/dataset/Remark_OK_0625'  # '/home/new/Downloads/dataset/AOI'
-    extension_name = 'xml'
+    extension_name = 'yml'
 
     series_list = []
     target_names = os.path.join(data_dir, '*.' + extension_name)
@@ -80,8 +80,8 @@ def create_ok_dataset(save_image_dir, crop_size, num_class, pattern_extension, i
         pattern_path_list = get_pattern_image_path(series_image_path, pattern_extension, image_extension)
         image_name = os.path.basename(series_image_path)
 
-        pattern_images = crop_image.crop_ok_image_array(pattern_path_list, crop_size)
-        image_list = crop_image.save_image_array(pattern_images, image_name, pattern_extension, label_ok)
+        pattern_images, grid_array = crop_image.crop_ok_image_array(pattern_path_list, crop_size)
+        image_list = crop_image.save_image_array(pattern_images, image_name, grid_array, pattern_extension, label_ok)
 
         ok_count = ok_count + len(image_list)
         for image in image_list:
@@ -93,13 +93,22 @@ def create_ok_dataset(save_image_dir, crop_size, num_class, pattern_extension, i
 
 
 if __name__ == '__main__':
-    save_image_dir = 'picture_7_pattern_0625'
+    ok_data_dir = '/home/new/Downloads/dataset/Remark_OK_0625'  # '/home/new/Downloads/dataset/AOI'
+    ng_data_dir = '/media/new/A43C2A8E3C2A5C14/Downloads/AOI_dataset/0703/NG'  # '/home/new/Downloads/dataset/Remark_NG'
+    ng_csv_file = '/media/new/A43C2A8E3C2A5C14/Downloads/AOI_dataset/0703/static_ng.csv'
+    save_image_dir = 'test'
     save_image_dir = os.path.join('picture', save_image_dir)
     crop_size = [224, 224]
     num_class = 2
     pattern_extension = ['sl', '01', '02', '03', '04', '05', '06']
     image_extension = 'bmp'
-    ng_count = 0 # create_ng_dataset(save_image_dir, crop_size, num_class, pattern_extension, image_extension)
-    ok_count = create_ok_dataset(save_image_dir, crop_size, num_class, pattern_extension, image_extension)
+    if ok_data_dir:
+        print("create ok dataset...")
+        ok_count = create_ok_dataset(ok_data_dir, save_image_dir, crop_size, num_class, pattern_extension,
+                                     image_extension)
+    if ng_data_dir:
+        print("create ng dataset...")
+        ng_count = create_ng_dataset(ng_data_dir, ng_csv_file, save_image_dir, crop_size, num_class, pattern_extension,
+                                     image_extension)
 
     print('finish! ok count: {}, ng count: {}'.format(ok_count, ng_count))
