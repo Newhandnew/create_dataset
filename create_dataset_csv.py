@@ -5,7 +5,7 @@ from crop_image import CropImage
 from multi_pattern_process import get_pattern_image_path
 
 
-def create_ng_dataset(data_dir, csv_file, save_image_dir, crop_size, num_class, pattern_extension, image_extension):
+def create_ng_dataset(data_dir, csv_file, save_image_dir, crop_size, num_class, pattern_extension, image_extension, change_scale=False):
     crop_number = 1
     ng_count = 0
     label_ng = 1  # replace this
@@ -44,7 +44,7 @@ def create_ng_dataset(data_dir, csv_file, save_image_dir, crop_size, num_class, 
                 print(defect_point)
                 defect_list.append(defect_point)
                 pattern_images, sub_grid_array = crop_image.crop_ng_image_array(pattern_path_list, defect_point,
-                                                                                crop_size, crop_number)
+                                                                                crop_size, crop_number, change_scale)
                 pattern_image_list += pattern_images
                 grid_array += sub_grid_array
 
@@ -59,7 +59,7 @@ def create_ng_dataset(data_dir, csv_file, save_image_dir, crop_size, num_class, 
     return ng_count
 
 
-def create_ok_dataset(data_dir, save_image_dir, crop_size, num_class, pattern_extension, image_extension):
+def create_ok_dataset(data_dir, save_image_dir, crop_size, num_class, pattern_extension, image_extension, change_scale=False):
     label_ok = 0
     ok_count = 0
     extension_name = 'yml'
@@ -80,7 +80,7 @@ def create_ok_dataset(data_dir, save_image_dir, crop_size, num_class, pattern_ex
         pattern_path_list = get_pattern_image_path(series_image_path, pattern_extension, image_extension)
         image_name = os.path.basename(series_image_path)
 
-        pattern_images, grid_array = crop_image.crop_ok_image_array(pattern_path_list, crop_size)
+        pattern_images, grid_array = crop_image.crop_ok_image_array(pattern_path_list, crop_size, change_scale)
         image_list = crop_image.save_image_array(pattern_images, image_name, grid_array, pattern_extension, label_ok)
 
         ok_count = ok_count + len(image_list)
@@ -102,13 +102,16 @@ if __name__ == '__main__':
     num_class = 2
     pattern_extension = ['sl', '01', '02', '03', '04', '05', '06']
     image_extension = 'bmp'
+    change_scale = True
+    ok_count = 0
+    ng_count = 0
     if ok_data_dir:
         print("create ok dataset...")
         ok_count = create_ok_dataset(ok_data_dir, save_image_dir, crop_size, num_class, pattern_extension,
-                                     image_extension)
+                                     image_extension, change_scale)
     if ng_data_dir:
         print("create ng dataset...")
         ng_count = create_ng_dataset(ng_data_dir, ng_csv_file, save_image_dir, crop_size, num_class, pattern_extension,
-                                     image_extension)
+                                     image_extension, change_scale)
 
     print('finish! ok count: {}, ng count: {}'.format(ok_count, ng_count))

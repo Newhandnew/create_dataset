@@ -9,15 +9,16 @@ from multi_pattern_process import get_pattern_image_path, read_image_array
 import create_dataset_csv
 
 flags = tf.app.flags
-flags.DEFINE_string("ok_data_dir", "D:/data/0831/ok_data", "ok picture folder")
-flags.DEFINE_string("ng_data_dir", "D:/data/0831/Remark_NG_0831", "ng picture folder")
-flags.DEFINE_string("ng_csv_path", "D:/data/0831/Remark_NG_0831.csv",
+flags.DEFINE_string("ok_data_dir", "", "ok picture folder")
+flags.DEFINE_string("ng_data_dir", "D:/data/0914/Remark_NG_0914", "ng picture folder")
+flags.DEFINE_string("ng_csv_path", "D:/data/0914/Remark_NG_0914.csv",
                     "ng csv path")
-flags.DEFINE_string("data_month", "08", "data month")
-flags.DEFINE_string("data_day", "31", "data day")
-flags.DEFINE_string("pattern_number", 4, "number of pattern")
-flags.DEFINE_string("all_training", False, "separate data to testing and training or just training")
-flags.DEFINE_string("balance_data", True, "balance all type of data to minimum number")
+flags.DEFINE_string("data_month", "09", "data month")
+flags.DEFINE_string("data_day", "14", "data day")
+flags.DEFINE_integer("pattern_number", 4, "number of pattern")
+flags.DEFINE_boolean("all_training", False, "separate data to testing and training or just training")
+flags.DEFINE_boolean("balance_data", True, "balance all type of data to minimum number")
+flags.DEFINE_boolean("change_image_scale", True, "change image scale for each crop patterns")
 FLAGS = flags.FLAGS
 
 
@@ -128,7 +129,11 @@ def main():
         pattern_extension = []
         exit()
 
-    save_image_name = data_name + '_' + pattern_name
+    scaled_mark = ""
+    if FLAGS.change_image_scale:
+        scaled_mark = "_scaled"
+
+    save_image_name = data_name + '_' + pattern_name + scaled_mark
     save_image_dir = os.path.join('picture', save_image_name)
     crop_size = [224, 224]
     num_class = 2
@@ -143,7 +148,7 @@ def main():
         print("create ok dataset...")
         ok_count = create_dataset_csv.create_ok_dataset(FLAGS.ok_data_dir, save_image_dir, crop_size, num_class,
                                                         pattern_extension,
-                                                        image_extension)
+                                                        image_extension, FLAGS.change_image_scale)
     else:
         os.makedirs(save_image_dir, exist_ok=True)
         open(ok_list_path, 'w+').close()
@@ -151,7 +156,7 @@ def main():
         print("create ng dataset...")
         ng_count = create_dataset_csv.create_ng_dataset(FLAGS.ng_data_dir, FLAGS.ng_csv_path, save_image_dir, crop_size,
                                                         num_class, pattern_extension,
-                                                        image_extension)
+                                                        image_extension, FLAGS.change_image_scale)
     else:
         os.makedirs(save_image_dir, exist_ok=True)
         open(ng_list_path, 'w+').close()

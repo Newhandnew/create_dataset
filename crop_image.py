@@ -53,7 +53,7 @@ class CropImage(object):
 
         return ok_images
 
-    def crop_ok_image_array(self, pattern_path_list, crop_size):
+    def crop_ok_image_array(self, pattern_path_list, crop_size, change_scale=False):
         """
         return pattern_images: [[01, 02, ...], [01, 02, ...], ...]
         """
@@ -71,6 +71,13 @@ class CropImage(object):
                 ok_images.append(image[y:y + crop_size[1], x:x + crop_size[0]])
             ok_images_array.append(ok_images)
         pattern_images = list(zip(*ok_images_array))  # unpack ok_images_array then zip
+
+        if change_scale:
+            scaled_pattern_images = []
+            for patterns in pattern_images:
+                scaled_patterns = self.random_change_image_scale(patterns)
+                scaled_pattern_images.append(scaled_patterns)
+            pattern_images = scaled_pattern_images
 
         return pattern_images, grid_array
 
@@ -156,7 +163,7 @@ class CropImage(object):
         scale_image = np.uint8(scale_image)
         return scale_image
 
-    def crop_ng_image_array(self, pattern_path_list, defect_point, crop_size, crop_number):
+    def crop_ng_image_array(self, pattern_path_list, defect_point, crop_size, crop_number, change_scale=False):
         """
         return pattern_images: [[01, 02, ...], [01, 02, ...], ...]
         """
@@ -179,6 +186,12 @@ class CropImage(object):
             pattern_images.extend((normal_array, h_flip_array, v_flip_array, h_v_flip_array))
 
             # pattern_images.append(crop_images)
+        if change_scale:
+            scaled_pattern_images = []
+            for patterns in pattern_images:
+                scaled_patterns = self.random_change_image_scale(patterns)
+                scaled_pattern_images.append(scaled_patterns)
+            pattern_images = scaled_pattern_images
 
         return pattern_images, grid_array
 
@@ -259,13 +272,16 @@ def main():
     for index, image in enumerate(ng_images):
         cv2.imshow(str(index), image)
     image = cv2.imread(img_path, 0)
-    image1 = crop_image.random_change_image_scale(image)
+    image_array = [image, image]
+    image1 = crop_image.random_change_image_scale(image_array)
     image2 = crop_image.random_change_image_scale(image)
     cv2.imshow("test", image)
-    cv2.imshow("1", image1)
+    cv2.imshow("1_0", image1[0])
+    cv2.imshow("1_1", image1[1])
     cv2.imshow("2", image2)
     print(image[2200, 500])
-    print(image1[2200, 500])
+    print(image1[0][2200, 500])
+    print(image1[1][2200, 500])
     print(image2[2200, 500])
     cv2.waitKey()
     print(crop_image.get_rotate_axis((1000, 1000)))
