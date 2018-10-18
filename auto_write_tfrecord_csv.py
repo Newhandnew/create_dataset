@@ -15,10 +15,12 @@ flags.DEFINE_string("ng_csv_path", "D:/data/0914/Remark_NG_0914.csv",
                     "ng csv path")
 flags.DEFINE_string("data_month", "09", "data month")
 flags.DEFINE_string("data_day", "14", "data day")
-flags.DEFINE_integer("pattern_number", 4, "number of pattern")
-flags.DEFINE_boolean("all_training", False, "separate data to testing and training or just training")
+flags.DEFINE_string("pattern_number", '4', "number of pattern")
+flags.DEFINE_string("data_type", "normal", "separate data [normal, all_training, all_testing]")
 flags.DEFINE_boolean("balance_data", True, "balance all type of data to minimum number")
 flags.DEFINE_boolean("change_image_scale", True, "change image scale for each crop patterns")
+flags.DEFINE_string("save_data_name", "", "name of the saved data, will give default name if empty")
+flags.DEFINE_string("image_extension", "bmp", "data image extension, [bmp, png]")
 FLAGS = flags.FLAGS
 
 
@@ -114,30 +116,32 @@ def main():
     data_name = "{}_{}_{}".format(data_year, data_month, data_day)
     print(data_name)
 
-    if FLAGS.pattern_number == 4:
+    assert FLAGS.pattern_number in ['4', '5', '7', '4_new']
+    pattern_name = ""
+    pattern_extension = []
+    if FLAGS.pattern_number == '4':
         pattern_name = '4pattern'
         pattern_extension = ['sl', '01', '02', '04']
-    elif FLAGS.pattern_number == 5:
+    elif FLAGS.pattern_number == '5':
         pattern_name = '5pattern'
         pattern_extension = ['sl0', 'sl', '01', '02', '04']
-    elif FLAGS.pattern_number == 7:
+    elif FLAGS.pattern_number == '7':
         pattern_name = '7pattern'
         pattern_extension = ['sl', '01', '02', '03', '04', '05', '06']
-    else:
-        print('pattern_number must be 4, 5, 7')
-        pattern_name = ""
-        pattern_extension = []
-        exit()
+    if FLAGS.pattern_number == '4_new':
+        pattern_name = '4pattern_new'
+        pattern_extension = ['sl', '01', '02', '03']
 
     scaled_mark = ""
     if FLAGS.change_image_scale:
         scaled_mark = "_scaled"
 
-    save_image_name = data_name + '_' + pattern_name + scaled_mark
-    save_image_dir = os.path.join('picture', save_image_name)
+    save_data_name = data_name + '_' + pattern_name + scaled_mark
+    save_image_dir = os.path.join('picture', save_data_name)
     crop_size = [224, 224]
     num_class = 2
-    image_extension = 'bmp'
+    assert FLAGS.image_extension in ['bmp', 'png']
+    image_extension = FLAGS.image_extension
     ok_count = 0
     ng_count = 0
 
@@ -176,28 +180,32 @@ def main():
     # print(image_names)
 
     output_dir = 'output'
-    tfrecord_train = save_image_name + '_train.tfrecords'
-    tfrecord_test = save_image_name + '_test.tfrecords'
+    tfrecord_train = save_data_name + '_train.tfrecords'
+    tfrecord_test = save_data_name + '_test.tfrecords'
     output_train = os.path.join(output_dir, tfrecord_train)
     output_test = os.path.join(output_dir, tfrecord_test)
     writer_train = tf.python_io.TFRecordWriter(output_train)
     writer_test = tf.python_io.TFRecordWriter(output_test)
     total_train_size = 0
     total_test_size = 0
-    train_file_path = os.path.join(output_dir, save_image_name + '_train_list')
-    test_file_path = os.path.join(output_dir, save_image_name + '_test_list')
+    train_file_path = os.path.join(output_dir, save_data_name + '_train_list')
+    test_file_path = os.path.join(output_dir, save_data_name + '_test_list')
     train_list_file = open(train_file_path, 'w+')
     test_list_file = open(test_file_path, 'w+')
     image_extension = 'png'
-    if FLAGS.all_training:
-        test_ratio = 0
-    else:
+
+    assert FLAGS.data_type in ['normal', 'all_training', 'all_testing']
+    if FLAGS.data_type == 'normal':
         test_ratio = 0.2
+    elif FLAGS.data_type == 'all_training':
+        test_ratio = 0
+    elif FLAGS.data_type == 'all_testing':
+        test_ratio = 0.99
 
     for label, image_list in enumerate(all_image_list):
         if not image_list:
             continue
-        train_image, test_image = train_test_split(image_list, test_size=test_ratio)
+        train_image, test_image = train_test_split(image_list, test_size=test_ratio, random_state=123)
         print('process label {} training data...'.format(label))
         for image_path in train_image:
             train_list_file.write('{}\n'.format(image_path))

@@ -157,7 +157,8 @@ class CropImage(object):
         scale_image = np.int16(image)  # convert to signed 16 bit integer to allow overflow
         random_scale = random.uniform(0.8, 1.2)
         random_offset = random.randint(-10, 10)
-        scale_image = random_scale * scale_image + random_offset  # apply scale factor
+        contrast_image = random_scale * (scale_image - scale_image.mean()) + scale_image.mean()
+        scale_image = contrast_image + random_offset  # apply scale factor
         scale_image = np.clip(scale_image, 0, 255)  # force all values to be between 0 and 255
         # after clip img2 is effectively unsigned 8 bit, but make it explicit:
         scale_image = np.uint8(scale_image)
