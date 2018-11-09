@@ -6,7 +6,7 @@ def get_defect_list_from_xml(xml_file, version):
     # version: [0: 2 light dot, 3 mura
     #           1: 2 detect 3 marked  8/31~
     #           2: 2 detect 20~ defect type 9/22~
-    #           3: type underspect: -1: detect, 0:defect, 1:underspect, 2:lower level]
+    #           3: type underspect: -1: detect, 0:defect, 1:underspect, 2:lower level] 10/05~
     root = ET.ElementTree(file=xml_file).getroot()
     panel_info = root.find('PanelDefectInfo')
     pattern_info = panel_info.find('PatternDefectInfos')

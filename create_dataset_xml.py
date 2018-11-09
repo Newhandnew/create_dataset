@@ -5,7 +5,8 @@ from multi_pattern_process import get_pattern_image_path
 import read_xml
 
 
-def create_ng_dataset(series_list, save_image_dir, crop_size, num_class, pattern_extension, image_extension):
+def create_ng_dataset(series_list, save_image_dir, crop_size, num_class, pattern_extension, image_extension,
+                      xml_version):
     crop_number = 5
     ng_count = 0
     label_ng = 1  # replace this
@@ -19,14 +20,18 @@ def create_ng_dataset(series_list, save_image_dir, crop_size, num_class, pattern
         pattern_path_list = get_pattern_image_path(series_image_path, pattern_extension, image_extension)
         image_name = os.path.basename(series_image_path) + '_ng'
 
-        defect_list = read_xml.get_defect_list(series_image_path + '_remarked.xml')
+        defect_list = read_xml.get_defect_list(series_image_path + '_remarked.xml', version=xml_version)
         print(defect_list)
+        grid_array = []
         pattern_image_list = []
         for defect_point in defect_list:
-            pattern_images = crop_image.crop_ng_image_array(pattern_path_list, defect_point, crop_size, crop_number)
+            pattern_images, sub_grid_array = crop_image.crop_ng_image_array(pattern_path_list, defect_point,
+                                                                            crop_size, crop_number)
             pattern_image_list += pattern_images
+            grid_array += sub_grid_array
 
-        image_list = crop_image.save_image_array(pattern_image_list, image_name, pattern_extension, label_ng)
+        image_list = crop_image.save_image_array(pattern_image_list, image_name, grid_array, pattern_extension,
+                                                 label_ng)
         ng_count = ng_count + len(image_list)
 
         for image in image_list:
@@ -48,8 +53,8 @@ def create_ok_dataset(series_list, save_image_dir, crop_size, num_class, pattern
         pattern_path_list = get_pattern_image_path(series_image_path, pattern_extension, image_extension)
         image_name = os.path.basename(series_image_path)
 
-        pattern_images = crop_image.crop_ok_image_array(pattern_path_list, crop_size)
-        image_list = crop_image.save_image_array(pattern_images, image_name, pattern_extension, label_ok)
+        pattern_images, grid_array = crop_image.crop_ok_image_array(pattern_path_list, crop_size)
+        image_list = crop_image.save_image_array(pattern_images, image_name, grid_array, pattern_extension, label_ok)
 
         ok_count = ok_count + len(image_list)
         for image in image_list:
@@ -87,8 +92,10 @@ if __name__ == '__main__':
     print("ok list: ", ok_series_list)
     print("ng list: ", ng_series_list)
     print("create ng dataset...")
-    ng_count = create_ng_dataset(ng_series_list, save_image_dir, crop_size, num_class, pattern_extension, image_extension)
+    ng_count = create_ng_dataset(ng_series_list, save_image_dir, crop_size, num_class, pattern_extension,
+                                 image_extension)
     print("create ok dataset...")
-    ok_count = create_ok_dataset(ok_series_list, save_image_dir, crop_size, num_class, pattern_extension, image_extension)
+    ok_count = create_ok_dataset(ok_series_list, save_image_dir, crop_size, num_class, pattern_extension,
+                                 image_extension)
 
     print('finish! ok count: {}, ng count: {}'.format(ok_count, ng_count))

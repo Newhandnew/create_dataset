@@ -18,6 +18,8 @@ flags.DEFINE_boolean("all_training", True, "separate data [normal, all_training,
 flags.DEFINE_boolean("balance_data", True, "balance all type of data to minimum number")
 flags.DEFINE_string("save_data_name", "", "name of the saved data, will give default name if empty")
 flags.DEFINE_string("image_extension", "bmp", "data image extension, [bmp, png]")
+flags.DEFINE_string("dir_name", "ok", "data image extension, [ok, ng, under_spec]")
+flags.DEFINE_integer("xml_version", 3, 'version of xml format')
 FLAGS = flags.FLAGS
 
 
@@ -126,9 +128,12 @@ def main():
     elif FLAGS.pattern_number == '7':
         pattern_name = '7pattern'
         pattern_extension = ['sl', '01', '02', '03', '04', '05', '06']
-    if FLAGS.pattern_number == '4_new':
+    elif FLAGS.pattern_number == '4_new':
         pattern_name = '4pattern_new'
         pattern_extension = ['sl', '01', '02', '03']
+    elif FLAGS.pattern_number == '5_new':
+        pattern_name = '5pattern_new'
+        pattern_extension = ['sl0', 'sl', '01', '02', '03']
     else:
         print('pattern_number does not exist')
         exit()
@@ -136,8 +141,9 @@ def main():
     if FLAGS.save_data_name:
         save_data_name = FLAGS.save_data_name
     else:
-        save_data_name = data_name + '_' + pattern_name
+        save_data_name = data_name + '_' + pattern_name + '_' + FLAGS.dir_name
     save_image_dir = os.path.join('picture', save_data_name)
+    print('save tfrecord in path: {}'.format(save_image_dir))
     crop_size = [224, 224]
     num_class = 2
     image_extension = FLAGS.image_extension
@@ -152,7 +158,7 @@ def main():
     print("ng list: ", ng_series_list)
     print("create ng dataset...")
     ng_count = create_dataset_xml.create_ng_dataset(ng_series_list, save_image_dir, crop_size, num_class,
-                                                    pattern_extension, image_extension)
+                                                    pattern_extension, image_extension, FLAGS.xml_version)
     print("create ok dataset...")
     ok_count = create_dataset_xml.create_ok_dataset(ok_series_list, save_image_dir, crop_size, num_class,
                                                     pattern_extension, image_extension)
@@ -175,8 +181,8 @@ def main():
     # print(image_names)
 
     output_dir = 'output'
-    tfrecord_train = save_data_name + '_train.tfrecords'
-    tfrecord_test = save_data_name + '_test.tfrecords'
+    tfrecord_train = save_data_name + FLAGS.dir_name + '_train.tfrecords'
+    tfrecord_test = save_data_name + FLAGS.dir_name + '_test.tfrecords'
     output_train = os.path.join(output_dir, tfrecord_train)
     output_test = os.path.join(output_dir, tfrecord_test)
     writer_train = tf.python_io.TFRecordWriter(output_train)
@@ -193,6 +199,11 @@ def main():
     else:
         test_ratio = 0.2
 
+    if FLAGS.dir_name == 'ok':
+        label_mark = 0
+    else:
+        label_mark = 1
+
     for label, image_list in enumerate(all_image_list):
         if not image_list:
             print("no image list")
@@ -204,7 +215,7 @@ def main():
             scaled_grid = get_scale_grid(image_path)
             pattern_path_list = get_pattern_image_path(image_path, pattern_extension, image_extension)
             image_array = read_image_array(pattern_path_list)
-            tf_transfer = transfer_tfrecord(image_array, pattern_extension, scaled_grid, label)
+            tf_transfer = transfer_tfrecord(image_array, pattern_extension, scaled_grid, label_mark)
             writer_train.write(tf_transfer.SerializeToString())
             total_train_size += 1
         print('process label {} testing data...'.format(label))
@@ -213,7 +224,7 @@ def main():
             scaled_grid = get_scale_grid(image_path)
             pattern_path_list = get_pattern_image_path(image_path, pattern_extension, image_extension)
             image_array = read_image_array(pattern_path_list)
-            tf_transfer = transfer_tfrecord(image_array, pattern_extension, scaled_grid, label)
+            tf_transfer = transfer_tfrecord(image_array, pattern_extension, scaled_grid, label_mark)
             writer_test.write(tf_transfer.SerializeToString())
             total_test_size += 1
 
