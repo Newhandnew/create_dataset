@@ -2,7 +2,11 @@ import xml.etree.cElementTree as ET
 import math
 
 
-def get_defect_list_from_xml(xml_file, f_new_version=True):
+def get_defect_list_from_xml(xml_file, version):
+    # version: [0: 2 light dot, 3 mura
+    #           1: 2 detect 3 marked  8/31~
+    #           2: 2 detect 20~ defect type 9/22~
+    #           3: type underspect: -1: detect, 0:defect, 1:underspect, 2:lower level]
     root = ET.ElementTree(file=xml_file).getroot()
     panel_info = root.find('PanelDefectInfo')
     pattern_info = panel_info.find('PatternDefectInfos')
@@ -12,14 +16,29 @@ def get_defect_list_from_xml(xml_file, f_new_version=True):
         # print(image_name.text)
         defect_info = pattern.find('DefectInfos')
         for defect in defect_info:
-            if f_new_version:
-                defect_type = defect.find('Type').text
-                if defect_type == '2' or defect_type == '4':
-                    f_get_bounding_box = False
-                else:
-                    f_get_bounding_box = True
-            else:
+            if version == 0:
                 f_get_bounding_box = True
+            elif version == 1:
+                if defect.find('Type').text == '3':
+                    f_get_bounding_box = True
+                else:
+                    f_get_bounding_box = False
+            elif version == 2:
+                if int(defect.find('Type').text) >= 20:
+                    f_get_bounding_box = True
+                else:
+                    f_get_bounding_box = False
+            elif version == 3:
+                if defect.find('IsUnderSpec').text == '0' or defect.find('IsUnderSpec').text == '2':
+                    if int(defect.find('Type').text) >= 20:
+                        f_get_bounding_box = True
+                    else:
+                        f_get_bounding_box = False
+                else:
+                    f_get_bounding_box = False
+            else:
+                print("no defined version")
+                f_get_bounding_box = False
             if f_get_bounding_box:
                 bounding_box = defect.find('BoundBox')
                 x = int(bounding_box.find('x').text)
@@ -45,28 +64,19 @@ def distance(p1, p2):
     return math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
 
 
-def get_defect_list(xml_file, f_new_version=True, limit_range=7):
-    defect_list = get_defect_list_from_xml(xml_file, f_new_version)
+def get_defect_list(xml_file, version=3, limit_range=7):
+    defect_list = get_defect_list_from_xml(xml_file, version)
     defect_list = remove_near_defect(defect_list, limit_range)
     return defect_list
 
 
 def main():
-    xml_file = '/home/new/4B836JS5KHZZ_remarked.xml'
-    # tree = ET.ElementTree(file=xml_file)
-    # root = tree.getroot()
-    # for child in root:
-    #     print('child tag: {}, child attrib: {}, child text: {}'.format(child.tag, child.attrib, child.text))
-    #     for sub in child:
-    #         print('sub tag: {}, sub attrib: {}, sub text: {}'.format(sub.tag, sub.attrib, sub.text))
-    #
-    # for test in root.find('PanelDefectInfo'):
-    #     print('test tag: {}, test attrib: {}, test text: {}'.format(test.tag, test.attrib, test.text))
+    xml_file = '/home/new/Downloads/dataset/1011/4A838HP9ARZZ_remarked.xml'
 
-    defect_list = get_defect_list_from_xml(xml_file, True)
+    defect_list = get_defect_list_from_xml(xml_file, 3)
 
     print(defect_list)
-    print("distance: ", distance(defect_list[0], defect_list[2]))
+    # print("distance: ", distance(defect_list[0], defect_list[2]))
     print(remove_near_defect(defect_list, 7))
     print(get_defect_list(xml_file))
 

@@ -13,14 +13,18 @@ flags = tf.app.flags
 flags.DEFINE_string("data_dir", "/home/new/Downloads/test_image", "picture folder include data list")
 flags.DEFINE_string("data_month", "", "data month")
 flags.DEFINE_string("data_day", "", "data day")
-flags.DEFINE_string("pattern_number", 4, "number of pattern")
-flags.DEFINE_string("all_training", True, "separate data to testing and training or just training")
-flags.DEFINE_string("balance_data", True, "balance all type of data to minimum number")
+flags.DEFINE_string("pattern_number", '4', "number of pattern")
+flags.DEFINE_boolean("all_training", True, "separate data [normal, all_training, all_testing]")
+flags.DEFINE_boolean("balance_data", True, "balance all type of data to minimum number")
+flags.DEFINE_string("save_data_name", "", "name of the saved data, will give default name if empty")
+flags.DEFINE_string("image_extension", "bmp", "data image extension, [bmp, png]")
 FLAGS = flags.FLAGS
 
 
-def transfer_tfrecord(image_array, pattern_extension, label):
-    tfrecord_feature = {'label': tf.train.Feature(int64_list=tf.train.Int64List(value=[label]))}
+def transfer_tfrecord(image_array, pattern_extension, scaled_grid, label):
+    tfrecord_feature = dict()
+    tfrecord_feature['label'] = tf.train.Feature(int64_list=tf.train.Int64List(value=[label]))
+    tfrecord_feature['grid'] = tf.train.Feature(float_list=tf.train.FloatList(value=scaled_grid))
     for index, image in enumerate(image_array):
         bytes_image = image.tobytes()
         tfrecord_feature['img_{}'.format(pattern_extension[index])] = \
@@ -77,6 +81,27 @@ def move_image_list(image_names, target_dir):
         shutil.move(image, target_dir)
 
 
+def read_grid(image_path):
+    split_list = image_path.split('_')
+    x = int(split_list[-2][1:])
+    y = int(split_list[-1][1:])
+    return x, y
+
+
+def scale_grid(grid, image_width, image_height):
+    x = float(grid[0]) / image_width
+    y = float(grid[1]) / image_height
+    return x, y
+
+
+def get_scale_grid(image_path):
+    image_width = 6576
+    image_height = 4384
+    grid = read_grid(image_path)
+    scaled_grid = scale_grid(grid, image_width, image_height)
+    return scaled_grid
+
+
 def main():
     assert FLAGS.data_dir, "--data_dir necessary"
     data_dir = FLAGS.data_dir
@@ -86,28 +111,38 @@ def main():
     if FLAGS.data_month:
         data_month = FLAGS.data_month
     if FLAGS.data_day:
-        data_month = FLAGS.data_day
+        data_day = FLAGS.data_day
     data_name = "{}_{}_{}".format(data_year, data_month, data_day)
     print(data_name)
 
-    if FLAGS.pattern_number == 4:
-        pattern_name = '4_pattern'
+    pattern_name = ""
+    pattern_extension = []
+    if FLAGS.pattern_number == '4':
+        pattern_name = '4pattern'
         pattern_extension = ['sl', '01', '02', '04']
-    elif FLAGS.pattern_number == 5:
-        pattern_name = '5_pattern'
+    elif FLAGS.pattern_number == '5':
+        pattern_name = '5pattern'
         pattern_extension = ['sl0', 'sl', '01', '02', '04']
-    elif FLAGS.pattern_number == 7:
-        pattern_name = '7_pattern'
+    elif FLAGS.pattern_number == '7':
+        pattern_name = '7pattern'
         pattern_extension = ['sl', '01', '02', '03', '04', '05', '06']
+    if FLAGS.pattern_number == '4_new':
+        pattern_name = '4pattern_new'
+        pattern_extension = ['sl', '01', '02', '03']
     else:
-        print('pattern_number must be 4, 5, 7')
+        print('pattern_number does not exist')
         exit()
 
-    save_image_name = data_name + '_' + pattern_name
-    save_image_dir = os.path.join('picture', save_image_name)
+    if FLAGS.save_data_name:
+        save_data_name = FLAGS.save_data_name
+    else:
+        save_data_name = data_name + '_' + pattern_name
+    save_image_dir = os.path.join('picture', save_data_name)
     crop_size = [224, 224]
     num_class = 2
-    image_extension = 'bmp'
+    image_extension = FLAGS.image_extension
+    ok_count = 0
+    ng_count = 0
     extension_name = '.yml'
     all_series_list = create_dataset_xml.get_series_list(data_dir, extension_name)
     ng_extension_name = '_remarked.xml'
@@ -140,16 +175,16 @@ def main():
     # print(image_names)
 
     output_dir = 'output'
-    tfrecord_train = save_image_name + '_train.tfrecords'
-    tfrecord_test = save_image_name + '_test.tfrecords'
+    tfrecord_train = save_data_name + '_train.tfrecords'
+    tfrecord_test = save_data_name + '_test.tfrecords'
     output_train = os.path.join(output_dir, tfrecord_train)
     output_test = os.path.join(output_dir, tfrecord_test)
     writer_train = tf.python_io.TFRecordWriter(output_train)
     writer_test = tf.python_io.TFRecordWriter(output_test)
     total_train_size = 0
     total_test_size = 0
-    train_file_path = os.path.join(output_dir, save_image_name + '_train_list')
-    test_file_path = os.path.join(output_dir, save_image_name + '_test_list')
+    train_file_path = os.path.join(output_dir, save_data_name + '_train_list')
+    test_file_path = os.path.join(output_dir, save_data_name + '_test_list')
     train_list_file = open(train_file_path, 'w+')
     test_list_file = open(test_file_path, 'w+')
     image_extension = 'png'
@@ -159,21 +194,26 @@ def main():
         test_ratio = 0.2
 
     for label, image_list in enumerate(all_image_list):
+        if not image_list:
+            print("no image list")
+            continue
         train_image, test_image = train_test_split(image_list, test_size=test_ratio, random_state=123)
         print('process label {} training data...'.format(label))
         for image_path in train_image:
             train_list_file.write('{}\n'.format(image_path))
+            scaled_grid = get_scale_grid(image_path)
             pattern_path_list = get_pattern_image_path(image_path, pattern_extension, image_extension)
             image_array = read_image_array(pattern_path_list)
-            tf_transfer = transfer_tfrecord(image_array, pattern_extension, label)
+            tf_transfer = transfer_tfrecord(image_array, pattern_extension, scaled_grid, label)
             writer_train.write(tf_transfer.SerializeToString())
             total_train_size += 1
         print('process label {} testing data...'.format(label))
         for image_path in test_image:
             test_list_file.write('{}\n'.format(image_path))
+            scaled_grid = get_scale_grid(image_path)
             pattern_path_list = get_pattern_image_path(image_path, pattern_extension, image_extension)
             image_array = read_image_array(pattern_path_list)
-            tf_transfer = transfer_tfrecord(image_array, pattern_extension, label)
+            tf_transfer = transfer_tfrecord(image_array, pattern_extension, scaled_grid, label)
             writer_test.write(tf_transfer.SerializeToString())
             total_test_size += 1
 
@@ -187,6 +227,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-

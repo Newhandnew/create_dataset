@@ -16,7 +16,7 @@ flags.DEFINE_string("ng_csv_path", "D:/data/0914/Remark_NG_0914.csv",
 flags.DEFINE_string("data_month", "09", "data month")
 flags.DEFINE_string("data_day", "14", "data day")
 flags.DEFINE_string("pattern_number", '4', "number of pattern")
-flags.DEFINE_string("data_type", "normal", "separate data [normal, all_training, all_testing]")
+flags.DEFINE_boolean("all_training", True, "separate data [normal, all_training, all_testing]")
 flags.DEFINE_boolean("balance_data", True, "balance all type of data to minimum number")
 flags.DEFINE_boolean("change_image_scale", True, "change image scale for each crop patterns")
 flags.DEFINE_string("save_data_name", "", "name of the saved data, will give default name if empty")
@@ -136,7 +136,10 @@ def main():
     if FLAGS.change_image_scale:
         scaled_mark = "_scaled"
 
-    save_data_name = data_name + '_' + pattern_name + scaled_mark
+    if FLAGS.save_data_name:
+        save_data_name = FLAGS.save_data_name
+    else:
+        save_data_name = data_name + '_' + pattern_name + scaled_mark
     save_image_dir = os.path.join('picture', save_data_name)
     crop_size = [224, 224]
     num_class = 2
@@ -193,17 +196,14 @@ def main():
     train_list_file = open(train_file_path, 'w+')
     test_list_file = open(test_file_path, 'w+')
     image_extension = 'png'
-
-    assert FLAGS.data_type in ['normal', 'all_training', 'all_testing']
-    if FLAGS.data_type == 'normal':
-        test_ratio = 0.2
-    elif FLAGS.data_type == 'all_training':
+    if FLAGS.all_training:
         test_ratio = 0
-    elif FLAGS.data_type == 'all_testing':
-        test_ratio = 0.99
+    else:
+        test_ratio = 0.2
 
     for label, image_list in enumerate(all_image_list):
         if not image_list:
+            print("no image list")
             continue
         train_image, test_image = train_test_split(image_list, test_size=test_ratio, random_state=123)
         print('process label {} training data...'.format(label))
