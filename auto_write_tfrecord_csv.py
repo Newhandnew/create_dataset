@@ -119,12 +119,14 @@ def main():
     assert FLAGS.pattern_number in ['4', '5', '7', '4_new']
     pattern_name = ""
     pattern_extension = []
+    write_pattern_extension = []
     if FLAGS.pattern_number == '4':
         pattern_name = '4pattern'
         pattern_extension = ['sl', '01', '02', '04']
     elif FLAGS.pattern_number == '5':
         pattern_name = '5pattern'
         pattern_extension = ['sl0', 'sl', '01', '02', '04']
+        write_pattern_extension = ['sl0', 'sl', '01', '02', '03']
     elif FLAGS.pattern_number == '7':
         pattern_name = '7pattern'
         pattern_extension = ['sl', '01', '02', '03', '04', '05', '06']
@@ -212,7 +214,7 @@ def main():
             scaled_grid = get_scale_grid(image_path)
             pattern_path_list = get_pattern_image_path(image_path, pattern_extension, image_extension)
             image_array = read_image_array(pattern_path_list)
-            tf_transfer = transfer_tfrecord(image_array, pattern_extension, scaled_grid, label)
+            tf_transfer = transfer_tfrecord(image_array, write_pattern_extension, scaled_grid, label)
             writer_train.write(tf_transfer.SerializeToString())
             total_train_size += 1
         print('process label {} testing data...'.format(label))
@@ -221,7 +223,7 @@ def main():
             scaled_grid = get_scale_grid(image_path)
             pattern_path_list = get_pattern_image_path(image_path, pattern_extension, image_extension)
             image_array = read_image_array(pattern_path_list)
-            tf_transfer = transfer_tfrecord(image_array, pattern_extension, scaled_grid, label)
+            tf_transfer = transfer_tfrecord(image_array, write_pattern_extension, scaled_grid, label)
             writer_test.write(tf_transfer.SerializeToString())
             total_test_size += 1
 
