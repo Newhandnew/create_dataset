@@ -20,6 +20,7 @@ flags.DEFINE_string("save_data_name", "", "name of the saved data, will give def
 flags.DEFINE_string("image_extension", "bmp", "data image extension, [bmp, png]")
 flags.DEFINE_string("dir_name", "ok", "data image extension, [ok, ng, under_spec]")
 flags.DEFINE_integer("xml_version", 3, 'version of xml format')
+flags.DEFINE_boolean("write_list", False, "write file list for tfrecord image name")
 FLAGS = flags.FLAGS
 
 
@@ -181,18 +182,20 @@ def main():
     # print(image_names)
 
     output_dir = 'output'
-    tfrecord_train = save_data_name + FLAGS.dir_name + '_train.tfrecords'
-    tfrecord_test = save_data_name + FLAGS.dir_name + '_test.tfrecords'
+    tfrecord_train = save_data_name + '_train.tfrecords'
     output_train = os.path.join(output_dir, tfrecord_train)
-    output_test = os.path.join(output_dir, tfrecord_test)
     writer_train = tf.python_io.TFRecordWriter(output_train)
-    writer_test = tf.python_io.TFRecordWriter(output_test)
+    if not FLAGS.all_training:
+        tfrecord_test = save_data_name + '_test.tfrecords'
+        output_test = os.path.join(output_dir, tfrecord_test)
+        writer_test = tf.python_io.TFRecordWriter(output_test)
     total_train_size = 0
     total_test_size = 0
-    train_file_path = os.path.join(output_dir, save_data_name + '_train_list')
-    test_file_path = os.path.join(output_dir, save_data_name + '_test_list')
-    train_list_file = open(train_file_path, 'w+')
-    test_list_file = open(test_file_path, 'w+')
+    if FLAGS.write_list:
+        train_file_path = os.path.join(output_dir, save_data_name + '_train_list')
+        test_file_path = os.path.join(output_dir, save_data_name + '_test_list')
+        train_list_file = open(train_file_path, 'w+')
+        test_list_file = open(test_file_path, 'w+')
     image_extension = 'png'
     if FLAGS.all_training:
         test_ratio = 0
@@ -211,27 +214,32 @@ def main():
         train_image, test_image = train_test_split(image_list, test_size=test_ratio, random_state=123)
         print('process label {} training data...'.format(label))
         for image_path in train_image:
-            train_list_file.write('{}\n'.format(image_path))
+            if FLAGS.write_list:
+                train_list_file.write('{}\n'.format(image_path))
             scaled_grid = get_scale_grid(image_path)
             pattern_path_list = get_pattern_image_path(image_path, pattern_extension, image_extension)
             image_array = read_image_array(pattern_path_list)
             tf_transfer = transfer_tfrecord(image_array, pattern_extension, scaled_grid, label_mark)
             writer_train.write(tf_transfer.SerializeToString())
             total_train_size += 1
-        print('process label {} testing data...'.format(label))
-        for image_path in test_image:
-            test_list_file.write('{}\n'.format(image_path))
-            scaled_grid = get_scale_grid(image_path)
-            pattern_path_list = get_pattern_image_path(image_path, pattern_extension, image_extension)
-            image_array = read_image_array(pattern_path_list)
-            tf_transfer = transfer_tfrecord(image_array, pattern_extension, scaled_grid, label_mark)
-            writer_test.write(tf_transfer.SerializeToString())
-            total_test_size += 1
+        if not FLAGS.all_training:
+            print('process label {} testing data...'.format(label))
+            for image_path in test_image:
+                if FLAGS.write_list:
+                    test_list_file.write('{}\n'.format(image_path))
+                scaled_grid = get_scale_grid(image_path)
+                pattern_path_list = get_pattern_image_path(image_path, pattern_extension, image_extension)
+                image_array = read_image_array(pattern_path_list)
+                tf_transfer = transfer_tfrecord(image_array, pattern_extension, scaled_grid, label_mark)
+                writer_test.write(tf_transfer.SerializeToString())
+                total_test_size += 1
 
-    train_list_file.close()
-    test_list_file.close()
+    if FLAGS.write_list:
+        train_list_file.close()
+        test_list_file.close()
     writer_train.close()
-    writer_test.close()
+    if not FLAGS.all_training:
+        writer_test.close()
 
     print('done! train size: {}, test size: {}'.format(total_train_size, total_test_size))
 

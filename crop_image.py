@@ -15,8 +15,15 @@ class CropImage(object):
         """pattern path list: [image1_path, image2_path, ...]"""
         image_array = []
         for path in pattern_path_list:
-            image = cv2.imread(path, 0)
-            image_array.append(image)
+            if os.path.exists(path):
+                image = cv2.imread(path, 0)
+                if not image.data:
+                    print('image {} is empty!!'.format(path))
+                    return 0
+                image_array.append(image)
+            else:
+                print('image {} is not exist!!'.format(path))
+                return 0
         return image_array
 
     def get_grid_axis(self, img_height, img_width, crop_size):
@@ -58,6 +65,8 @@ class CropImage(object):
         return pattern_images: [[01, 02, ...], [01, 02, ...], ...]
         """
         image_array = self.read_image_array(pattern_path_list)
+        if not image_array:
+            return 0, 0
         height, width = image_array[0].shape
         height = height - 1
         width = width - 1
@@ -169,6 +178,8 @@ class CropImage(object):
         return pattern_images: [[01, 02, ...], [01, 02, ...], ...]
         """
         image_array = self.read_image_array(pattern_path_list)
+        if not image_array:
+            return 0, 0
         pattern_images = []
         grid_array = []
         for i in range(crop_number):

@@ -45,6 +45,8 @@ def create_ng_dataset(data_dir, csv_file, save_image_dir, crop_size, num_class, 
                 defect_list.append(defect_point)
                 pattern_images, sub_grid_array = crop_image.crop_ng_image_array(pattern_path_list, defect_point,
                                                                                 crop_size, crop_number, change_scale)
+                if not pattern_images:
+                    continue
                 pattern_image_list += pattern_images
                 grid_array += sub_grid_array
 
@@ -81,6 +83,8 @@ def create_ok_dataset(data_dir, save_image_dir, crop_size, num_class, pattern_ex
         image_name = os.path.basename(series_image_path)
 
         pattern_images, grid_array = crop_image.crop_ok_image_array(pattern_path_list, crop_size, change_scale)
+        if not pattern_images:
+            continue
         image_list = crop_image.save_image_array(pattern_images, image_name, grid_array, pattern_extension, label_ok)
 
         ok_count = ok_count + len(image_list)

@@ -16,7 +16,7 @@ def create_ng_dataset(series_list, save_image_dir, crop_size, num_class, pattern
     image_list_file = open(image_list_file_path, 'w+')
 
     for series_image_path in series_list:
-        print(series_image_path)
+        # print(series_image_path)
         pattern_path_list = get_pattern_image_path(series_image_path, pattern_extension, image_extension)
         image_name = os.path.basename(series_image_path) + '_ng'
 
@@ -27,6 +27,8 @@ def create_ng_dataset(series_list, save_image_dir, crop_size, num_class, pattern
         for defect_point in defect_list:
             pattern_images, sub_grid_array = crop_image.crop_ng_image_array(pattern_path_list, defect_point,
                                                                             crop_size, crop_number)
+            if not pattern_images:
+                continue
             pattern_image_list += pattern_images
             grid_array += sub_grid_array
 
@@ -49,11 +51,13 @@ def create_ok_dataset(series_list, save_image_dir, crop_size, num_class, pattern
     image_list_file_path = os.path.join(save_image_dir, 'ok_image_list')
     image_list_file = open(image_list_file_path, 'w+')
     for series_image_path in series_list:
-        print(series_image_path)
+        # print(series_image_path)
         pattern_path_list = get_pattern_image_path(series_image_path, pattern_extension, image_extension)
         image_name = os.path.basename(series_image_path)
 
         pattern_images, grid_array = crop_image.crop_ok_image_array(pattern_path_list, crop_size)
+        if not pattern_images:
+            continue
         image_list = crop_image.save_image_array(pattern_images, image_name, grid_array, pattern_extension, label_ok)
 
         ok_count = ok_count + len(image_list)
