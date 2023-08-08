@@ -1,4 +1,5 @@
-import cv2
+from scipy import misc
+import os
 
 
 def get_pattern_image_path(series_image_path, pattern_extension, image_extension):
@@ -12,6 +13,11 @@ def get_pattern_image_path(series_image_path, pattern_extension, image_extension
 def read_image_array(pattern_path_list):
     image_array = []
     for path in pattern_path_list:
-        image = cv2.imread(path, 0)
-        image_array.append(image)
+        if os.path.exists(path):
+            image = misc.imread(path)
+            if not image.data:
+                raise('image {} is empty!!'.format(path))
+            image_array.append(image)
+        else:
+            raise('image {} is not exist!!'.format(path))
     return image_array

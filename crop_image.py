@@ -6,7 +6,6 @@ import numpy as np
 
 
 class CropImage(object):
-
     def __init__(self, save_image_dir='', num_class=0):
         if save_image_dir != '':
             self.set_save_dir(save_image_dir, num_class)
@@ -173,7 +172,8 @@ class CropImage(object):
         scale_image = np.uint8(scale_image)
         return scale_image
 
-    def crop_ng_image_array(self, pattern_path_list, defect_point, crop_size, crop_number, change_scale=False):
+    def crop_ng_image_array(self, pattern_path_list, defect_point, crop_size, crop_number, rotate=True,
+                            change_scale=False):
         """
         return pattern_images: [[01, 02, ...], [01, 02, ...], ...]
         """
@@ -184,20 +184,24 @@ class CropImage(object):
         grid_array = []
         for i in range(crop_number):
             crop_images, grid = self.random_crop_array(image_array, defect_point, crop_size)
-            grid_array += self.get_rotate_axis(grid)
-            normal_array = []
-            h_flip_array = []
-            v_flip_array = []
-            h_v_flip_array = []
-            for image in crop_images:
-                four_rotated_images = self.get_four_rotated_image(image)
-                normal_array.append(four_rotated_images[0])
-                h_flip_array.append(four_rotated_images[1])
-                v_flip_array.append(four_rotated_images[2])
-                h_v_flip_array.append(four_rotated_images[3])
-            pattern_images.extend((normal_array, h_flip_array, v_flip_array, h_v_flip_array))
+            if rotate:
+                grid_array += self.get_rotate_axis(grid)
+                normal_array = []
+                h_flip_array = []
+                v_flip_array = []
+                h_v_flip_array = []
+                for image in crop_images:
+                    four_rotated_images = self.get_four_rotated_image(image)
+                    normal_array.append(four_rotated_images[0])
+                    h_flip_array.append(four_rotated_images[1])
+                    v_flip_array.append(four_rotated_images[2])
+                    h_v_flip_array.append(four_rotated_images[3])
+                pattern_images.extend((normal_array, h_flip_array, v_flip_array, h_v_flip_array))
+            else:
+                pattern_images.append(crop_images)
+                grid_array.append(grid)
 
-            # pattern_images.append(crop_images)
+                # pattern_images.append(crop_images)
         if change_scale:
             scaled_pattern_images = []
             for patterns in pattern_images:
@@ -274,7 +278,7 @@ def main():
     # cv2.waitKey()
     # cv2.destroyAllWindows()
     # test ng crop
-    defect_point = (6486,3970)
+    defect_point = (6486, 3970)
     crop_number = 1
     save_image_dir = 'picture/test'
     num_class = 2
@@ -301,4 +305,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

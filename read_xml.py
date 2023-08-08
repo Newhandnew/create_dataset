@@ -71,7 +71,7 @@ def get_defect_list(xml_file, version=3, limit_range=7):
 
 
 def main():
-    xml_file = '/home/new/Downloads/dataset/1011/4A838HP9ARZZ_remarked.xml'
+    xml_file = '/home/new/Downloads/dataset/original_data/1219/D685AAK0WEZZ_remarked.xml'
 
     defect_list = get_defect_list_from_xml(xml_file, 3)
 

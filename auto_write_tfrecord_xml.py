@@ -8,19 +8,19 @@ import datetime
 from multi_pattern_process import get_pattern_image_path, read_image_array
 import create_dataset_xml
 
-
 flags = tf.app.flags
-flags.DEFINE_string("data_dir", "/home/new/Downloads/test_image", "picture folder include data list")
+flags.DEFINE_string("data_dir", "/media/new/A43C2A8E3C2A5C14/Downloads/AOI_dataset/test_ng", "picture folder include data list")
 flags.DEFINE_string("data_month", "", "data month")
 flags.DEFINE_string("data_day", "", "data day")
-flags.DEFINE_string("pattern_number", '4', "number of pattern")
+flags.DEFINE_string("pattern_number", '5_new', "number of pattern")
 flags.DEFINE_boolean("all_training", True, "separate data [normal, all_training, all_testing]")
-flags.DEFINE_boolean("balance_data", True, "balance all type of data to minimum number")
+flags.DEFINE_boolean("balance_data", False, "balance all type of data to minimum number")
 flags.DEFINE_string("save_data_name", "", "name of the saved data, will give default name if empty")
-flags.DEFINE_string("image_extension", "bmp", "data image extension, [bmp, png]")
-flags.DEFINE_string("dir_name", "ok", "data image extension, [ok, ng, under_spec]")
+flags.DEFINE_string("image_extension", "png", "data image extension, [bmp, png]")
+flags.DEFINE_string("dir_name", "ng", "data image extension, [ok, ng, under_spec]")
 flags.DEFINE_integer("xml_version", 3, 'version of xml format')
 flags.DEFINE_boolean("write_list", False, "write file list for tfrecord image name")
+flags.DEFINE_boolean("rotate_ng", False, "get four rotate images for ng")
 FLAGS = flags.FLAGS
 
 
@@ -162,7 +162,8 @@ def main():
     print("ng list: ", ng_series_list)
     print("create ng dataset...")
     ng_count = create_dataset_xml.create_ng_dataset(ng_series_list, save_image_dir, crop_size, num_class,
-                                                    pattern_extension, image_extension, FLAGS.xml_version)
+                                                    pattern_extension, image_extension, FLAGS.xml_version,
+                                                    FLAGS.rotate_ng)
     print("create ok dataset...")
     ok_count = create_dataset_xml.create_ok_dataset(ok_series_list, save_image_dir, crop_size, num_class,
                                                     pattern_extension, image_extension)

@@ -6,7 +6,7 @@ import read_xml
 
 
 def create_ng_dataset(series_list, save_image_dir, crop_size, num_class, pattern_extension, image_extension,
-                      xml_version):
+                      xml_version, rotate=True):
     crop_number = 5
     ng_count = 0
     label_ng = 1  # replace this
@@ -26,7 +26,7 @@ def create_ng_dataset(series_list, save_image_dir, crop_size, num_class, pattern
         pattern_image_list = []
         for defect_point in defect_list:
             pattern_images, sub_grid_array = crop_image.crop_ng_image_array(pattern_path_list, defect_point,
-                                                                            crop_size, crop_number)
+                                                                            crop_size, crop_number, rotate)
             if not pattern_images:
                 continue
             pattern_image_list += pattern_images
